@@ -1,12 +1,16 @@
 # ts2gas
+
 A function that transpiles TypeScript to Google Apps Script.
 
 ```ts
 ts2gas(code: string): string
 ```
 
-This module is written in JavaScript and not TypeScript because:
-- tsc gets confused when compiling a compiler program
+## Install
+
+```
+yarn add ts2gas
+```
 
 ## Usage
 
@@ -91,3 +95,8 @@ class Test {
 let t = new Test();
 console.log(t.name);  // 'test'
 ```
+
+## Developer Note
+
+This module is written in JavaScript and not TypeScript because:
+- tsc gets confused when compiling a compiler program
