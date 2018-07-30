@@ -17,7 +17,8 @@ module.exports = (source) => {
       experimentalDecorators: true,
       noResolve: true,
       pretty: true,
-      module: ts.ModuleKind.CommonJS,
+      module: ts.ModuleKind.None,
+      // moduleResolution: false,
     }
   });
   return result.outputText;

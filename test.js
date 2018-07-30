@@ -24,5 +24,13 @@ printBeforeAndAfter(`class Hamburger {
     // This is a method.
   }
 }`);
+printBeforeAndAfter(`
+import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;
 
+function getCurrentMessage():GmailMessage {
+  return GmailApp.createDraft("", "", "").send()
+}
+
+getCurrentMessage();
+`);
 // TODO: Add more examples
