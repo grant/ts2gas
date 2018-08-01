@@ -8,7 +8,7 @@ var ts = require("typescript");
  */
 module.exports = (source) => {
   // Before transpiling, apply these touch-ups:
-  
+
   // ## Imports
   // Some editors (like IntelliJ) automatically import identifiers.
   // Individual imports lines are commented out
@@ -27,7 +27,7 @@ module.exports = (source) => {
       noResolve: true,
       pretty: true,
       module: ts.ModuleKind.None,
-      moduleResolution: false,
+      // moduleResolution: false, false is invalid
     }
   });
 
@@ -35,7 +35,7 @@ module.exports = (source) => {
 
   // # Clean up output (multiline string)
   let output = result.outputText;
-  
+
   // ## exports.__esModule
   // Remove all lines that have exports.__esModule = true
   // @see https://github.com/Microsoft/TypeScript/issues/14351
