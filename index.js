@@ -15,6 +15,10 @@ module.exports = (source) => {
   // i.e. import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;
   source = source.replace(/^.*import /mg, '// import ');
 
+  // ## Exports
+  // replace exports like `export * from 'file'`
+  source = source.replace(/(^\s*export.*from\s*['"][^'"]*['"])/mg, '// $1');
+
   // Transpile
   // https://www.typescriptlang.org/docs/handbook/compiler-options.html
   let result = ts.transpileModule(source, {

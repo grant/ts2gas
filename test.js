@@ -73,6 +73,11 @@ function getCurrentMessage():GmailMessage {
   },
   testRequire: () => {
     printBeforeAndAfter(`const a = require('foo');`);
+  },
+  testExportFrom: () => {
+    printBeforeAndAfter(
+        `export * from 'file'\n` +
+        `export { foo, bar } from "file"`)
   }
 };
 
