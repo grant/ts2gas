@@ -1,5 +1,7 @@
 # ts2gas
 
+<a href="https://www.npmjs.com/package/ts2gas"><img src="https://img.shields.io/npm/v/ts2gas.svg" alt="npm Version"></a>
+
 A function that transpiles TypeScript to Google Apps Script.
 
 ```ts
