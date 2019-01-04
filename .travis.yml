@@ -14,7 +14,7 @@ cache:
 before_install:
 - npm install -g npm@latest
 install:
-- npm ci
+- yarn
 before_script:
 - npm run build
 script:
