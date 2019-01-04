@@ -1,0 +1,22 @@
+sudo: required
+os:
+- linux
+- osx
+language: node_js
+node_js:
+- node
+- '10'
+- '8'
+- '6'
+cache:
+  directories:
+  - "$HOME/.npm"
+before_install:
+- npm install -g npm@latest
+install:
+- npm ci
+before_script:
+- npm run build
+script:
+- npm run lint
+- npm run test
