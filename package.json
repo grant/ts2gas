@@ -2,9 +2,11 @@
   "name": "ts2gas",
   "version": "1.3.0",
   "description": "A function that transpiles TypeScript to Google Apps Script.",
-  "main": "index.js",
+  "main": "./src/index.js",
   "scripts": {
-    "test": "node test.js"
+    "build": "tsc --project tsconfig.json",
+    "lint": "tslint --project tslint.json && echo 'No lint errors. All good!'",
+    "test": "node tests/test.js"
   },
   "repository": {
     "type": "git",
@@ -18,5 +20,9 @@
   "homepage": "https://github.com/grant/ts2gas#readme",
   "dependencies": {
     "typescript": "^3.2.2"
+  },
+  "devDependencies": {
+    "tslint": "^5.11.0",
+    "@types/node": "^10.12.18"
   }
 }

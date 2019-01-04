@@ -1,18 +1,21 @@
-const ts2gas = require('./');
+const ts2gas = require('../');
 
 /**
  * Prints the transpiled code before and after transpilation.
  * @param {string} code The TypeScript code.
  * @example printBeforeAndAfter('const hi:string = `Hi ${1 + 2}`;');
  */
-function printBeforeAndAfter(code) {
+function printBeforeAndAfter(code: string) {
   console.log('v--TS--v');
   console.log(code);
   console.log('–––');
   console.log(ts2gas(code), '^--GS--^'); // Prevents newline
 }
 
-const tests = {
+interface Tests {
+  [keys: string]: () => void;
+}
+const tests: Tests = {
   testConst: () => {
     printBeforeAndAfter('const hi:string = `Hi ${1 + 2}`;');
   },
@@ -25,7 +28,7 @@ const tests = {
   listToppings() {
     // This is a method.
   }
-}`
+}`,
     );
   },
   testTemplateStrings: () => {
@@ -77,16 +80,17 @@ function getCurrentMessage():GmailMessage {
   testExportFrom: () => {
     printBeforeAndAfter(
         `export * from 'file'\n` +
-        `export { foo, bar } from "file"`)
-  }
+        `export { foo, bar } from "file"`);
+  },
 };
 
 // Run tests
-console.log('## TESTS ##')
+console.log('## TESTS ##');
 const testNames = Object.keys(tests);
 console.log('---------------------------------------------------------------------------------');
-for (let testName of testNames) {
-  console.log('# ' + testName);
-  tests[testName]();
+for (const testName of testNames) {
+  console.log(`# ${testName}`);
+  const test = tests[testName];
+  test();
   console.log('---------------------------------------------------------------------------------');
 }

@@ -1,4 +1,4 @@
-var ts = require("typescript");
+import * as ts from 'typescript';
 
 /**
  * Transpiles a TypeScript file into a valid Apps Script file.
@@ -6,7 +6,7 @@ var ts = require("typescript");
  * @param {string} source The TypeScript source code as a string.
  * @see https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
  */
-module.exports = (source) => {
+const ts2gas = (source: string) => {
   // Before transpiling, apply these touch-ups:
 
   // ## Imports
@@ -21,18 +21,18 @@ module.exports = (source) => {
 
   // Transpile
   // https://www.typescriptlang.org/docs/handbook/compiler-options.html
-  let result = ts.transpileModule(source, {
+  const result = ts.transpileModule(source, {
     compilerOptions: {
-      lib: 'ES2015',
-      target: 'ES3',
+      lib: ['ES2015'],
+      target: ts.ScriptTarget.ES3,
       noImplicitUseStrict: true,
       noLib: true,
       experimentalDecorators: true,
       noResolve: true,
       pretty: true,
       module: ts.ModuleKind.None,
-      // moduleResolution: false, false is invalid
-    }
+      // moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    },
   });
 
   // After transpiling, apply these touch-ups:
@@ -57,4 +57,6 @@ var module = module || { exports: exports };\n` + output;
   output = output.replace(/^.*exports\[\"default\"\].*$\n/mg, '');
 
   return output;
-}
+};
+
+export = ts2gas;
