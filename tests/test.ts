@@ -1,4 +1,4 @@
-const ts2gas = require('./');
+const ts2gas = require('../');
 
 /**
  * Prints the transpiled code before and after transpilation.
