@@ -1,0 +1,20 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    // "declaration": true,
+    "target": "es5",
+    "lib": [
+      "es5",
+      "es6",
+      "es2015",
+      "es2016",
+      "es2017"
+    ],
+    "strict": true,
+    "moduleResolution": "node",
+  },
+  "files": [
+    "src/index.ts",
+    "tests/test.ts",
+  ]
+}
