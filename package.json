@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/grant/ts2gas#readme",
   "dependencies": {
-    "typescript": "^2.9.2"
+    "typescript": "^3.2.2"
   }
 }
