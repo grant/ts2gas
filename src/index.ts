@@ -2,7 +2,6 @@ import * as ts from 'typescript';
 
 /**
  * Transpiles a TypeScript file into a valid Apps Script file.
- * Note: Do not convert this method to TypeScript or else the compiler will get confused.
  * @param {string} source The TypeScript source code as a string.
  * @see https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
  */
@@ -13,11 +12,35 @@ const ts2gas = (source: string) => {
   // Some editors (like IntelliJ) automatically import identifiers.
   // Individual imports lines are commented out
   // i.e. import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;
-  source = source.replace(/^.*import /mg, '// import ');
+  function ignoreImport(context: ts.TransformationContext) {
+    return (sourceFile: ts.SourceFile): ts.SourceFile => {
+      return visitNode(sourceFile);
+    };
+    function visitNode <T extends ts.Node>(node: T): T {
+      if(node.kind === ts.SyntaxKind.ImportEqualsDeclaration
+        || node.kind === ts.SyntaxKind.ImportDeclaration) {
+        return ts.createNotEmittedStatement(node) as unknown as T;
+      }
+      return ts.visitEachChild(node, visitNode, context);
+    }
+  }
+  // source = source.replace(/^.*import /mg, '// import ');
 
   // ## Exports
   // replace exports like `export * from 'file'`
-  source = source.replace(/(^\s*export.*from\s*['"][^'"]*['"])/mg, '// $1');
+  function ignoreExportFrom(context: ts.TransformationContext) {
+    return (sourceFile: ts.SourceFile): ts.SourceFile => {
+      return visitNode(sourceFile);
+    };
+    function visitNode <T extends ts.Node>(node: T): T {
+      if(node.kind === ts.SyntaxKind.ExportDeclaration
+        && node.getChildren().find(e => e.kind === ts.SyntaxKind.FromKeyword)) {
+        return ts.createNotEmittedStatement(node) as unknown as T;
+      }
+      return ts.visitEachChild(node, visitNode, context);
+    }
+  }
+  // source = source.replace(/(^\s*export.*from\s*['"][^'"]*['"])/mg, '// $1');
 
   // Transpile
   // https://www.typescriptlang.org/docs/handbook/compiler-options.html
@@ -32,6 +55,11 @@ const ts2gas = (source: string) => {
       pretty: true,
       module: ts.ModuleKind.None,
       // moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    },
+    transformers: {
+      before: [ignoreExportFrom, ignoreImport],
+      // after: [ignoreXXX],
+      // afterDeclarations: [],
     },
   });
 
@@ -50,11 +78,12 @@ const ts2gas = (source: string) => {
 
   // Include an exports object in all files.
   output = `var exports = exports || {};
-var module = module || { exports: exports };\n` + output;
+var module = module || { exports: exports };
+${output}`;
 
   // Remove default exports
   // (Transpiled `exports["default"]`)
-  output = output.replace(/^.*exports\[\"default\"\].*$\n/mg, '');
+  output = output.replace(/^\s*exports\[\"default\"\].*$\n/mg, '');
 
   return output;
 };
