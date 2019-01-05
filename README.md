@@ -1,6 +1,6 @@
 # ts2gas
 
-<a href="https://www.npmjs.com/package/ts2gas"><img src="https://img.shields.io/npm/v/ts2gas.svg" alt="npm Version"></a>
+<a href="https://www.npmjs.com/package/ts2gas"><img src="https://img.shields.io/npm/v/ts2gas.svg" alt="npm Version"></a><a href="https://travis-ci.org/grant/ts2gas"><img src="https://travis-ci.org/grant/ts2gas.svg?branch=master" alt="Build Status"></a>
 
 A function that transpiles TypeScript to Google Apps Script.
 
