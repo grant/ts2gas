@@ -6,41 +6,112 @@ import * as ts from 'typescript';
  * @see https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
  */
 const ts2gas = (source: string) => {
+
+  // types used with the TransformerAPI
+  type TransformerFactory = ts.TransformerFactory<ts.SourceFile>;
+  type NodeFilter = (node: ts.Node) => boolean;
+
+  /**
+   * Create a 'before' Transformer callback function
+   * @param {NodeFilter} nodeFilter The node visitor used to transform.
+   */
+  const ignoreNodeBeforeBuilder = (nodeFilter: NodeFilter): TransformerFactory =>
+    (context: ts.TransformationContext) => {
+      return (sf: ts.SourceFile): ts.SourceFile => visitNode(sf);
+
+      function visitNode <T extends ts.Node>(node: T): T {
+        if(nodeFilter(node)) {
+          // transform the node to ignore into a ts.NotEmittedStatement
+          return ts.createNotEmittedStatement(node) as unknown as T;
+        }
+        return ts.visitEachChild(node, visitNode, context);  // resume processing
+      }
+    };
+
+  /**
+   * Create an 'after' Transformer callback function
+   * @param {NodeFilter} nodeFilter The node visitor used to transform.
+   */
+  const ignoreNodeAfterBuilder = (kind: ts.SyntaxKind, nodeFilter: NodeFilter): TransformerFactory =>
+    (context: ts.TransformationContext) => {
+      const previousOnSubstituteNode = context.onSubstituteNode;
+      context.enableSubstitution(kind);
+      context.onSubstituteNode = (hint, node) => {
+        node = previousOnSubstituteNode(hint, node);
+        if (nodeFilter(node)) {
+          node = ts.createNotEmittedStatement(node);
+        }
+        return node;
+      };
+      return (file: ts.SourceFile) => file;
+    };
+
   // Before transpiling, apply these touch-ups:
 
   // ## Imports
   // Some editors (like IntelliJ) automatically import identifiers.
   // Individual imports lines are commented out
   // i.e. import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;
-  function ignoreImport(context: ts.TransformationContext) {
-    return (sourceFile: ts.SourceFile): ts.SourceFile => {
-      return visitNode(sourceFile);
-    };
-    function visitNode <T extends ts.Node>(node: T): T {
-      if(node.kind === ts.SyntaxKind.ImportEqualsDeclaration
-        || node.kind === ts.SyntaxKind.ImportDeclaration) {
-        return ts.createNotEmittedStatement(node) as unknown as T;
-      }
-      return ts.visitEachChild(node, visitNode, context);
-    }
-  }
+
+  /** filter all import declaration nodes */
+  const importNodeFilter: NodeFilter = (node: ts.Node) =>
+    ts.isImportEqualsDeclaration(node) || ts.isImportDeclaration(node);
+
+  const ignoreImport = ignoreNodeBeforeBuilder(importNodeFilter);
   // source = source.replace(/^.*import /mg, '// import ');
 
   // ## Exports
   // replace exports like `export * from 'file'`
-  function ignoreExportFrom(context: ts.TransformationContext) {
-    return (sourceFile: ts.SourceFile): ts.SourceFile => {
-      return visitNode(sourceFile);
-    };
-    function visitNode <T extends ts.Node>(node: T): T {
-      if(node.kind === ts.SyntaxKind.ExportDeclaration
-        && node.getChildren().find(e => e.kind === ts.SyntaxKind.FromKeyword)) {
-        return ts.createNotEmittedStatement(node) as unknown as T;
-      }
-      return ts.visitEachChild(node, visitNode, context);
-    }
-  }
+
+  /** filter export...from declaration nodes */
+  const exportFromNodeFilter: NodeFilter = (node: ts.Node) =>
+    node.kind === ts.SyntaxKind.ExportDeclaration
+    && !!node.getChildren().find(e => e.kind === ts.SyntaxKind.FromKeyword);
+
+  const ignoreExportFrom = ignoreNodeAfterBuilder(
+    ts.SyntaxKind.ExpressionStatement,
+    exportFromNodeFilter,
+  );
   // source = source.replace(/(^\s*export.*from\s*['"][^'"]*['"])/mg, '// $1');
+
+  // After transpiling, apply these touch-ups:
+
+  // ## exports.__esModule
+  // Remove all lines that have exports.__esModule = true
+  // @see https://github.com/Microsoft/TypeScript/issues/14351
+
+  /** filter all added expression statement nodes */
+  const exportEsModuleNodeFilter: NodeFilter = (node: ts.Node) =>
+    node.kind === ts.SyntaxKind.ExpressionStatement
+    && node.pos === -1 && node.end === -1;  // hint this statement was added by transpiler
+
+  const removeExportEsModule = ignoreNodeAfterBuilder(
+    ts.SyntaxKind.ExpressionStatement,
+    exportEsModuleNodeFilter,
+  );
+  // output = output.replace('exports.__esModule = true;', ''); // Remove this line
+
+  // Remove default exports
+  // (Transpiled `exports["default"]`)
+
+  /** filter all added expression statement nodes */
+  const exportsDefaultNodeFilter: NodeFilter = (node: ts.Node) =>
+    ts.isExpressionStatement(node)
+    && ts.isBinaryExpression(node.expression)
+    && ts.isPropertyAccessExpression(node.expression.left)
+    && node.expression.left.expression.hasOwnProperty('escapedText')
+    && (node.expression.left.expression as unknown as {escapedText: string}).escapedText === 'exports'
+    && ts.isIdentifier(node.expression.left.name)
+    && ts.idText(node.expression.left.name) === 'default'
+    && node.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken
+    // && right.kind === ts.SyntaxKind.TrueKeyword
+    && ts.isIdentifier(node.expression.right);
+
+  const removeExportsDefault = ignoreNodeAfterBuilder(
+    ts.SyntaxKind.ExpressionStatement,
+    exportsDefaultNodeFilter,
+  );
+  // output = output.replace(/^\s*exports\[\"default\"\].*$\n/mg, '');
 
   // Transpile
   // https://www.typescriptlang.org/docs/handbook/compiler-options.html
@@ -58,32 +129,24 @@ const ts2gas = (source: string) => {
     },
     transformers: {
       before: [ignoreExportFrom, ignoreImport],
-      // after: [ignoreXXX],
+      after: [removeExportEsModule, removeExportsDefault],
       // afterDeclarations: [],
     },
   });
 
-  // After transpiling, apply these touch-ups:
-
   // # Clean up output (multiline string)
   let output = result.outputText;
-
-  // ## exports.__esModule
-  // Remove all lines that have exports.__esModule = true
-  // @see https://github.com/Microsoft/TypeScript/issues/14351
-  output = output.replace('exports.__esModule = true;', ''); // Remove this line
 
   // ## Exports
   // Exports are transpiled to variables 'exports' and 'module.exports'
 
+  const pjson = require('../package.json');
+
   // Include an exports object in all files.
-  output = `var exports = exports || {};
+  output = `// Compiled using ${pjson.name} ${pjson.version} (TypeScript ${ts.version})
+var exports = exports || {};
 var module = module || { exports: exports };
 ${output}`;
-
-  // Remove default exports
-  // (Transpiled `exports["default"]`)
-  output = output.replace(/^\s*exports\[\"default\"\].*$\n/mg, '');
 
   return output;
 };
