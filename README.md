@@ -97,8 +97,3 @@ class Test {
 let t = new Test();
 console.log(t.name);  // 'test'
 ```
-
-## Developer Note
-
-This module is written in JavaScript and not TypeScript because:
-- tsc gets confused when compiling a compiler program
