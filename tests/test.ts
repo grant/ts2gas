@@ -15,6 +15,7 @@ function printBeforeAndAfter(code: string) {
 interface Tests {
   [keys: string]: () => void;
 }
+
 const tests: Tests = {
   testConst: () => {
     printBeforeAndAfter('const hi:string = `Hi ${1 + 2}`;');
@@ -81,6 +82,35 @@ function getCurrentMessage():GmailMessage {
     printBeforeAndAfter(
         `export * from 'file'\n` +
         `export { foo, bar } from "file"`);
+  },
+  tesMultilineImports: () => {
+    printBeforeAndAfter(
+`// next statement will be ignored
+import ContentAlignment
+= GoogleAppsScript.Slides.ContentAlignment;
+// now resume with next statement`);
+  },
+  tesMultilineExports: () => {
+    printBeforeAndAfter(
+`// next statement will be ignored
+export { foo, bar }
+  from "file";
+// next statement will be preserved
+/** Supported languages for localized data */
+export enum Languages {
+  /** English (USA) */
+  eng_us = 'eng_us',
+  /** French (France) */
+  fre_fr = 'fre_fr',
+}
+export class Client {
+  /** URL to the login endpoint */
+  private readonly signinUrl: string;
+}
+export default Client;
+export
+  { ZipCodeValidator };
+// now resume with next statement`);
   },
 };
 
