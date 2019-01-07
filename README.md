@@ -8,6 +8,24 @@ A function that transpiles TypeScript to Google Apps Script.
 ts2gas(code: string): string
 ```
 
+For example the code below
+```ts
+const writeToLog = (message: string) => console.info(message);
+
+let words = ['hello', 'world'];
+writeToLog(`${words.join(' ')}`);
+```
+
+gets transpiled into
+```javascript
+// Compiled using ts2gas 1.3.0 (TypeScript 3.2.2)
+var exports = exports || {};
+var module = module || { exports: exports };
+var writeToLog = function (message) { return console.info(message); };
+var words = ['hello', 'world'];
+writeToLog("" + words.join(' '));
+```
+
 ## Install
 
 ```
@@ -18,10 +36,10 @@ yarn add ts2gas
 
 Write Apps Script as TypeScript without including any imports.
 
-```js
+```ts
 const ts2gas = require('ts2gas');
 
-let ts = ts2gas(`
+let transpiled = ts2gas(`
 function buildName(first:string, last:string) {
   return \`\${firstName} \${lastName}\`;
 }
