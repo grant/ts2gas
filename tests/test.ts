@@ -90,7 +90,7 @@ import ContentAlignment
 = GoogleAppsScript.Slides.ContentAlignment;
 // now resume with next statement`);
   },
-  tesMultilineExports: () => {
+  testMultilineExports: () => {
     printBeforeAndAfter(
 `// next statement will be ignored
 export { foo, bar }
@@ -111,6 +111,13 @@ export default Client;
 export
   { ZipCodeValidator };
 // now resume with next statement`);
+  },
+  testHelloWorld: () => {
+    printBeforeAndAfter(
+`const writeToLog = (message: string) => console.info(message);
+
+let words = ['hello', 'world'];
+writeToLog(\`\${words.join(' ')}\`);`);
   },
 };
 
