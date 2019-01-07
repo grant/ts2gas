@@ -115,9 +115,3 @@ class Test {
 let t = new Test();
 console.log(t.name);  // 'test'
 ```
-
-## Developer Note
-
-This module is written in TypeScript to be consistent.
-- support TypeScript version 3.2
-- use the Transformers API for *pre* and *post* transpiling processing
