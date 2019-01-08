@@ -1,5 +1,4 @@
 import * as ts from 'typescript';
-import * as _ from 'lodash';
 
 /**
  * Transpiles a TypeScript file into a valid Apps Script file.
@@ -7,10 +6,6 @@ import * as _ from 'lodash';
  * @see https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
  */
 const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
-
-  // types used with the TransformerAPI
-  type TransformerFactory = ts.TransformerFactory<ts.SourceFile>;
-  type NodeFilter = (node: ts.Node) => boolean;
 
   /**
    * Create a 'before' Transformer callback function
@@ -140,12 +135,15 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   };
 
   // keep only overridable properties
-  transpileOptions = _.isObject(transpileOptions)
-    ? _.pick(transpileOptions, ['compilerOptions', 'renamedDependencies'])
-    : {};
+  if (typeof transpileOptions === 'object') {
+    const { compilerOptions, renamedDependencies } = transpileOptions;
+    transpileOptions = { compilerOptions, renamedDependencies };
+  } else {
+    transpileOptions = {};
+  }
 
   // merge properties in order for proper override
-  transpileOptions = _.merge({},
+  transpileOptions = deepAssign({},  // safe to mutate
     defaults,  // default (overridable)
     transpileOptions,  // user override
     statics,  // statics
@@ -169,6 +167,41 @@ var module = module || { exports: exports };
 ${output}`;
 
   return output;
+
+  // types used with the TransformerAPI
+  type TransformerFactory = ts.TransformerFactory<ts.SourceFile>;
+  type NodeFilter = (node: ts.Node) => boolean;
+
+  interface KeyedMap { [keys: string]: any; }
+
+  function deepAssign(target: KeyedMap, ...sources: KeyedMap[]): KeyedMap {
+
+    for (const source of sources) {
+      const keys = Object.keys(source);
+      for (const key of keys) {
+        const targetValue = target.hasOwnProperty(key)
+          ? target[key]
+          : undefined;
+        if (source.hasOwnProperty(key)) {
+          const value: unknown = source[key];
+          if(isArray(value)) {
+            target[key] = isArray(targetValue) ? targetValue.concat(value) : value;
+          } else if (isObject(value)) {
+            target[key] = deepAssign(isObject(targetValue) ? targetValue : {}, value);
+          } else if (typeof value !== 'undefined') {
+            target[key] = value;
+          }
+        }
+      }
+    }
+
+    return target;
+
+    // type guards helpers
+    function isArray(v: unknown): v is any[] { return Array.isArray(v); }
+    function isObject(v: unknown): v is { [keys: string]: any } { return typeof v === 'object'; }
+  }
+
 };
 
 export = ts2gas;
