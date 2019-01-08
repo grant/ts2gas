@@ -1,11 +1,12 @@
 import * as ts from 'typescript';
+import * as _ from 'lodash';
 
 /**
  * Transpiles a TypeScript file into a valid Apps Script file.
  * @param {string} source The TypeScript source code as a string.
  * @see https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
  */
-const ts2gas = (source: string) => {
+const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
 
   // types used with the TransformerAPI
   type TransformerFactory = ts.TransformerFactory<ts.SourceFile>;
@@ -113,26 +114,57 @@ const ts2gas = (source: string) => {
   );
   // output = output.replace(/^\s*exports\[\"default\"\].*$\n/mg, '');
 
-  // Transpile
-  // https://www.typescriptlang.org/docs/handbook/compiler-options.html
-  const result = ts.transpileModule(source, {
+  /** These settings can be overriden */
+  const defaults: ts.TranspileOptions = {
     compilerOptions: {
-      lib: ['ES2015'],
-      target: ts.ScriptTarget.ES3,
       noImplicitUseStrict: true,
-      noLib: true,
       experimentalDecorators: true,
+      // pretty: true,
+    },
+  };
+
+  /** These the settings are always used */
+  const statics: ts.TranspileOptions = {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES3,
+      noLib: true,
+      // lib: [  // Not be relevant with ts.transpileModule(). also 'noLib' is true
+      //   'es5',
+      //   'es2015.core',
+      //   'es2015.collection',  // Map, Set, WeakMap, WeakSet
+      //   'es2015.generator',  // Generator
+      //   'es2015.promise',  // Promise
+      //   'es2015.iterable',  // Iterator & Iterable
+      //   'es2015.proxy',  // Proxy
+      //   'es2015.proxy',  // Proxy
+      //   'es2015.reflect',  // Reflect
+      //   'es2015.symbol',  // Symbol
+      //   'es2015.symbol.wellknown',  // WellKnown symbols
+      // ],
       noResolve: true,
-      pretty: true,
       module: ts.ModuleKind.None,
       // moduleResolution: ts.ModuleResolutionKind.NodeJs,
     },
     transformers: {
       before: [ignoreExportFrom, ignoreImport],
       after: [removeExportEsModule, removeExportsDefault],
-      // afterDeclarations: [],
     },
-  });
+  };
+
+  // keep only overridable properties
+  transpileOptions = _.isObject(transpileOptions)
+    ? _.pick(transpileOptions, ['compilerOptions', 'renamedDependencies'])
+    : {};
+
+  // merge properties in order for proper override
+  transpileOptions = _.merge({},
+    defaults,  // default (overridable)
+    transpileOptions,  // user override
+    statics,  // statics
+  );
+
+  // Transpile (cf. https://www.typescriptlang.org/docs/handbook/compiler-options.html)
+  const result = ts.transpileModule(source, transpileOptions);
 
   // # Clean up output (multiline string)
   let output = result.outputText;
