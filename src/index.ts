@@ -121,6 +121,8 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
       experimentalDecorators: true,
       // pretty: true,
     },
+    // the following property is to document this little known feature
+    // renamedDependencies: { SomeName: 'SomeOtherName' },
   };
 
   /** These the settings are always used */
@@ -128,22 +130,8 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     compilerOptions: {
       target: ts.ScriptTarget.ES3,
       noLib: true,
-      // lib: [  // Not be relevant with ts.transpileModule(). also 'noLib' is true
-      //   'es5',
-      //   'es2015.core',
-      //   'es2015.collection',  // Map, Set, WeakMap, WeakSet
-      //   'es2015.generator',  // Generator
-      //   'es2015.promise',  // Promise
-      //   'es2015.iterable',  // Iterator & Iterable
-      //   'es2015.proxy',  // Proxy
-      //   'es2015.proxy',  // Proxy
-      //   'es2015.reflect',  // Reflect
-      //   'es2015.symbol',  // Symbol
-      //   'es2015.symbol.wellknown',  // WellKnown symbols
-      // ],
       noResolve: true,
       module: ts.ModuleKind.None,
-      // moduleResolution: ts.ModuleResolutionKind.NodeJs,
     },
     transformers: {
       before: [ignoreExportFrom, ignoreImport],
