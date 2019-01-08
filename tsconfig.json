@@ -1,17 +1,12 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    // "declaration": true,
-    "target": "es5",
-    "lib": [
-      "es5",
-      "es6",
-      "es2015",
-      "es2016",
-      "es2017"
-    ],
+    "declaration": true,
+    "target": "es2017",  // fully supported with node ^8.10.0 (cf. https://node.green/)
+    "lib": ["es2017"],
     "strict": true,
     "moduleResolution": "node",
+    "module": "commonjs",
   },
   "files": [
     "src/index.ts",
