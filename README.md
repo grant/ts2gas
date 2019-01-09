@@ -51,6 +51,33 @@ function buildName(first:string, last:string) {
 // }
 ```
 
+### Advanced
+
+Transpiler is called with this default *ts.TranspileOptions* object
+
+```ts
+{
+  compilerOptions: {
+    target: ts.ScriptTarget.ES3,
+    noLib: true,
+    noResolve: true,
+    module: ts.ModuleKind.None,
+    noImplicitUseStrict: true,
+    experimentalDecorators: true,
+  },
+  // the following property is to document this little known feature
+  // renamedDependencies: { SomeName: 'SomeOtherName' },
+}
+```
+
+ts2gas can accepts a custom *ts.TranspileOptions* object as second parameter.
+
+```ts
+ts2gas(code: string, transpileOptions: ts.TranspileOptions): string
+```
+
+Note that the following compilerOptions cannot be changed: `target`, `noLib`, `noResolve`, `module`
+
 ## TypeScript Tests
 
 Some samples of TypeScript derived from https://angular-2-training-book.rangle.io/handout/features/
