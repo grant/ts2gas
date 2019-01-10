@@ -112,6 +112,11 @@ export
   { ZipCodeValidator };
 // now resume with next statement`);
   },
+  testImportFrom: () => {
+    printBeforeAndAfter(
+`import Module from 'TypeScriptModule';
+const module = new Module();`);
+  },
   testNamespace: () => {
     printBeforeAndAfter(
 `namespace Pop {
