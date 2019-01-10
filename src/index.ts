@@ -101,8 +101,14 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
 
   /** filter all added expression statement nodes */
   const exportEsModuleNodeFilter: NodeFilter = (node: ts.Node) =>
-    node.kind === ts.SyntaxKind.ExpressionStatement
-    && node.pos === -1 && node.end === -1;  // hint this statement was added by transpiler
+    ts.isExpressionStatement(node)
+    && node.pos === -1 && node.end === -1
+    && ts.isBinaryExpression(node.expression)
+    && ts.isPropertyAccessExpression(node.expression.left)
+    && ts.isIdentifier(node.expression.left.expression)
+    && ts.idText(node.expression.left.expression) === 'exports'
+    && ts.idText(node.expression.left.name) === '__esModule'
+;  // hint this statement was added by transpiler
 
   const removeExportEsModule = ignoreNodeAfterBuilder(
     ts.SyntaxKind.ExpressionStatement,
