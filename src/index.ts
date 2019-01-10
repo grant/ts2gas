@@ -52,8 +52,10 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
         const k = Object.keys(node);
         if (nodeFilter(node) && (node as any).autoGenerateId) {
           const original = (node as any).original as ts.ImportDeclaration;
-          if (original && original.moduleSpecifier && original.moduleSpecifier) {
-            return ts.createIdentifier(`${original.getText()}`);
+          if (original && original.moduleSpecifier
+            && ts.isStringLiteral(original.moduleSpecifier)
+          ) {
+            return ts.createIdentifier(`${original.moduleSpecifier.text}`);
           }
         }
         return node;
