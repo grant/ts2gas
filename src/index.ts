@@ -43,6 +43,24 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
       return (file: ts.SourceFile) => file;
     };
 
+    const restoreImportIdBuilder = (kind: ts.SyntaxKind, nodeFilter: NodeFilter): TransformerFactory =>
+    (context: ts.TransformationContext) => {
+      const previousOnSubstituteNode = context.onSubstituteNode;
+      context.enableSubstitution(kind);
+      context.onSubstituteNode = (hint, node) => {
+        node = previousOnSubstituteNode(hint, node);
+        const k = Object.keys(node);
+        if (nodeFilter(node) && (node as any).autoGenerateId) {
+          const original = (node as any).original as ts.ImportDeclaration;
+          if (original && original.moduleSpecifier && original.moduleSpecifier) {
+            return ts.createIdentifier(`${original.getText()}`);
+          }
+        }
+        return node;
+      };
+      return (file: ts.SourceFile) => file;
+    };
+
   // Before transpiling, apply these touch-ups:
 
   // ## Imports
@@ -55,6 +73,13 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     ts.isImportEqualsDeclaration(node) || ts.isImportDeclaration(node);
 
   const ignoreImport = ignoreNodeBeforeBuilder(importNodeFilter);
+
+  /** restore ts.Identifier original text */
+  const identifierNode: NodeFilter = (node: ts.Node) => ts.isIdentifier(node);
+  const restoreIdentifier = restoreImportIdBuilder(
+    ts.SyntaxKind.Identifier,
+    identifierNode,
+  );
   // source = source.replace(/^.*import /mg, '// import ');
 
   // ## Exports
@@ -65,10 +90,7 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     node.kind === ts.SyntaxKind.ExportDeclaration
     && !!node.getChildren().find(e => e.kind === ts.SyntaxKind.FromKeyword);
 
-  const ignoreExportFrom = ignoreNodeAfterBuilder(
-    ts.SyntaxKind.ExpressionStatement,
-    exportFromNodeFilter,
-  );
+  const ignoreExportFrom = ignoreNodeBeforeBuilder(exportFromNodeFilter);
   // source = source.replace(/(^\s*export.*from\s*['"][^'"]*['"])/mg, '// $1');
 
   // After transpiling, apply these touch-ups:
@@ -131,7 +153,7 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     },
     transformers: {
       before: [ignoreExportFrom, ignoreImport],
-      after: [removeExportEsModule, removeExportsDefault],
+      after: [restoreIdentifier, removeExportEsModule, removeExportsDefault],
     },
   };
 
