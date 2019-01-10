@@ -87,13 +87,13 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // i.e. import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;
 
   /** filter all import declaration nodes */
-  const importNodeFilter: NodeFilter = (node: ts.Node) =>
+  const importNodeFilter = (node: ts.Node): node is ts.ImportEqualsDeclaration|ts.ImportDeclaration =>
     ts.isImportEqualsDeclaration(node) || ts.isImportDeclaration(node);
 
   const ignoreImport = ignoreNodeBeforeBuilder(importNodeFilter);
 
   /** restore ts.Identifier original text */
-  const identifierNode: NodeFilter = (node: ts.Node) => ts.isIdentifier(node);
+  const identifierNode = (node: ts.Node): node is ts.Identifier => ts.isIdentifier(node);
   const restoreIdentifier = restoreImportIdBuilder(
     ts.SyntaxKind.Identifier,
     identifierNode,
@@ -104,9 +104,9 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // replace exports like `export * from 'file'`
 
   /** filter export...from declaration nodes */
-  const exportFromNodeFilter: NodeFilter = (node: ts.Node) =>
-    node.kind === ts.SyntaxKind.ExportDeclaration
-    && !!node.getChildren().find(e => e.kind === ts.SyntaxKind.FromKeyword);
+  const exportFromNodeFilter = (node: ts.Node): node is ts.ExportDeclaration =>
+    ts.isExportDeclaration(node)  // 'export ...'
+    && !!node.getChildren().find(e => e.kind === ts.SyntaxKind.FromKeyword);  // 'from'
 
   const ignoreExportFrom = ignoreNodeBeforeBuilder(exportFromNodeFilter);
   // source = source.replace(/(^\s*export.*from\s*['"][^'"]*['"])/mg, '// $1');
@@ -118,15 +118,14 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // @see https://github.com/Microsoft/TypeScript/issues/14351
 
   /** filter all added expression statement nodes */
-  const exportEsModuleNodeFilter: NodeFilter = (node: ts.Node) =>
+  const exportEsModuleNodeFilter = (node: ts.Node): node is ts.ExpressionStatement =>
     ts.isExpressionStatement(node)
-    && node.pos === -1 && node.end === -1
+    && node.pos === -1 && node.end === -1  // hint it was added by tranpiler
     && ts.isBinaryExpression(node.expression)
     && ts.isPropertyAccessExpression(node.expression.left)
     && ts.isIdentifier(node.expression.left.expression)
     && ts.idText(node.expression.left.expression) === 'exports'
-    && ts.idText(node.expression.left.name) === '__esModule'
-;  // hint this statement was added by transpiler
+    && ts.idText(node.expression.left.name) === '__esModule';
 
   const removeExportEsModule = ignoreNodeAfterBuilder(
     ts.SyntaxKind.ExpressionStatement,
@@ -138,11 +137,11 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // (Transpiled `exports["default"]`)
 
   /**  Filter ts.Node which are statement assigning to 'exports["default"]' */
-  const exportsDefaultNodeFilter: NodeFilter = (node: ts.Node) =>
+  const exportsDefaultNodeFilter = (node: ts.Node): node is ts.ExpressionStatement =>
     ts.isExpressionStatement(node)
     && ts.isBinaryExpression(node.expression)  // is it a binary expression
     && ts.isPropertyAccessExpression(node.expression.left)
-    && ts.isIdentifier(node.expression.left.expression)  // is it ''exports
+    && ts.isIdentifier(node.expression.left.expression)  // is it 'exports'
     && ts.idText(node.expression.left.expression) === 'exports'
     && ts.isIdentifier(node.expression.left.name)  // is it 'default'
     && ts.idText(node.expression.left.name) === 'default'
