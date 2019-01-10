@@ -112,6 +112,19 @@ export
   { ZipCodeValidator };
 // now resume with next statement`);
   },
+  testImportFrom: () => {
+    printBeforeAndAfter(
+`import Module from 'TypeScriptModule';
+const module = new Module();`);
+  },
+  testNamespace: () => {
+    printBeforeAndAfter(
+`namespace Pop {
+  export const goes = 'Goes';
+  export function The(): void {}
+  export class Wza {}
+}`);
+  },
   testHelloWorld: () => {
     printBeforeAndAfter(
 `const writeToLog = (message: string) => console.info(message);
@@ -120,7 +133,6 @@ let words = ['hello', 'world'];
 writeToLog(\`\${words.join(' ')}\`);`);
   },
 };
-
 // Run tests
 console.log('## TESTS ##');
 const testNames = Object.keys(tests);
