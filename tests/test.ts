@@ -114,15 +114,20 @@ export
   },
   testImportFrom: () => {
     printBeforeAndAfter(
-`import Module from 'TypeScriptModule';
-const module = new Module();`);
-  },
+`import Module from 'TypeScriptModule1';
+const module = new Module();
+import { SubModule } from "TypeScriptModule2";
+const subModule = new SubModule();
+import { SubModule2, SubModule3 } from "TypeScriptModule3";
+const subModule2 = new SubModule2();
+const subModule3 = new SubModule3();`);
+        },
   testNamespace: () => {
     printBeforeAndAfter(
 `namespace Pop {
-  export const goes = 'Goes';
-  export function The(): void {}
-  export class Wza {}
+export const goes = 'Goes';
+export function The(): void {}
+export class Wza {}
 }`);
   },
   testHelloWorld: () => {
