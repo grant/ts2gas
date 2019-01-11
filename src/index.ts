@@ -26,7 +26,8 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     };
 
   /**
-   * Create an 'after' Transformer callback function
+   * Create an 'after' Transformer callback function to ignore filered nodes
+   * @param {ts.SyntaxKind} kind the kind of node to filter.
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
   const ignoreNodeAfterBuilder = (kind: ts.SyntaxKind, nodeFilter: NodeFilter): TransformerFactory =>
@@ -36,6 +37,7 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
       context.onSubstituteNode = (hint, node) => {
         node = previousOnSubstituteNode(hint, node);
         if (nodeFilter(node)) {
+          /** Do not emit this node */
           node = ts.createNotEmittedStatement(node);
         }
         return node;
@@ -43,20 +45,34 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
       return (file: ts.SourceFile) => file;
     };
 
-    const restoreImportIdBuilder = (kind: ts.SyntaxKind, nodeFilter: NodeFilter): TransformerFactory =>
+  // the following attributes 'autoGenerateId' and 'original' are not exposed by ts
+  interface InternalNode extends ts.Identifier {
+    original?: ts.Node;
+  }
+  interface InternalIdentifier extends ts.Identifier, InternalNode {
+    autoGenerateId?: number;
+  }
+  // little helper to reveal the internals
+  function isTsIdentifier(node: ts.Node): node is InternalIdentifier { return ts.isIdentifier(node); }
+
+  /**
+   * Create an 'after' Transformer callback function to restore original identifier
+   * @param {ts.SyntaxKind} kind the kind of node to filter.
+   * @param {NodeFilter} nodeFilter The node visitor used to transform.
+   */
+  const restoreImportIdBuilder = (kind: ts.SyntaxKind, nodeFilter: NodeFilter): TransformerFactory =>
     (context: ts.TransformationContext) => {
       const previousOnSubstituteNode = context.onSubstituteNode;
       context.enableSubstitution(kind);
       context.onSubstituteNode = (hint, node) => {
         node = previousOnSubstituteNode(hint, node);
-        const k = Object.keys(node);
-        if (nodeFilter(node) && (node as any).autoGenerateId) {
-          const original = (node as any).original as ts.ImportDeclaration;
-          if (original && original.moduleSpecifier
-            && ts.isStringLiteral(original.moduleSpecifier)
-          ) {
-            return ts.createIdentifier(`${original.moduleSpecifier.text}`);
-          }
+        if (
+          nodeFilter(node)
+          && isTsIdentifier(node) && node.autoGenerateId
+          && node.original && ts.isImportDeclaration(node.original)
+          && node.original.moduleSpecifier && ts.isStringLiteral(node.original.moduleSpecifier)
+        ) {
+          return ts.createIdentifier(`${node.original.moduleSpecifier.text}`);
         }
         return node;
       };
@@ -71,13 +87,13 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // i.e. import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;
 
   /** filter all import declaration nodes */
-  const importNodeFilter: NodeFilter = (node: ts.Node) =>
+  const importNodeFilter = (node: ts.Node): node is ts.ImportEqualsDeclaration|ts.ImportDeclaration =>
     ts.isImportEqualsDeclaration(node) || ts.isImportDeclaration(node);
 
   const ignoreImport = ignoreNodeBeforeBuilder(importNodeFilter);
 
   /** restore ts.Identifier original text */
-  const identifierNode: NodeFilter = (node: ts.Node) => ts.isIdentifier(node);
+  const identifierNode = (node: ts.Node): node is ts.Identifier => ts.isIdentifier(node);
   const restoreIdentifier = restoreImportIdBuilder(
     ts.SyntaxKind.Identifier,
     identifierNode,
@@ -88,9 +104,9 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // replace exports like `export * from 'file'`
 
   /** filter export...from declaration nodes */
-  const exportFromNodeFilter: NodeFilter = (node: ts.Node) =>
-    node.kind === ts.SyntaxKind.ExportDeclaration
-    && !!node.getChildren().find(e => e.kind === ts.SyntaxKind.FromKeyword);
+  const exportFromNodeFilter = (node: ts.Node): node is ts.ExportDeclaration =>
+    ts.isExportDeclaration(node)  // 'export ...'
+    && !!node.getChildren().find(e => e.kind === ts.SyntaxKind.FromKeyword);  // 'from'
 
   const ignoreExportFrom = ignoreNodeBeforeBuilder(exportFromNodeFilter);
   // source = source.replace(/(^\s*export.*from\s*['"][^'"]*['"])/mg, '// $1');
@@ -102,15 +118,14 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // @see https://github.com/Microsoft/TypeScript/issues/14351
 
   /** filter all added expression statement nodes */
-  const exportEsModuleNodeFilter: NodeFilter = (node: ts.Node) =>
+  const exportEsModuleNodeFilter = (node: ts.Node): node is ts.ExpressionStatement =>
     ts.isExpressionStatement(node)
-    && node.pos === -1 && node.end === -1
+    && node.pos === -1 && node.end === -1  // hint it was added by tranpiler
     && ts.isBinaryExpression(node.expression)
     && ts.isPropertyAccessExpression(node.expression.left)
     && ts.isIdentifier(node.expression.left.expression)
     && ts.idText(node.expression.left.expression) === 'exports'
-    && ts.idText(node.expression.left.name) === '__esModule'
-;  // hint this statement was added by transpiler
+    && ts.idText(node.expression.left.name) === '__esModule';
 
   const removeExportEsModule = ignoreNodeAfterBuilder(
     ts.SyntaxKind.ExpressionStatement,
@@ -121,19 +136,19 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // Remove default exports
   // (Transpiled `exports["default"]`)
 
-  /** filter all added expression statement nodes */
-  const exportsDefaultNodeFilter: NodeFilter = (node: ts.Node) =>
+  /**  Filter ts.Node which are statement assigning to 'exports["default"]' */
+  const exportsDefaultNodeFilter = (node: ts.Node): node is ts.ExpressionStatement =>
     ts.isExpressionStatement(node)
-    && ts.isBinaryExpression(node.expression)
+    && ts.isBinaryExpression(node.expression)  // is it a binary expression
     && ts.isPropertyAccessExpression(node.expression.left)
-    && node.expression.left.expression.hasOwnProperty('escapedText')
-    && (node.expression.left.expression as unknown as {escapedText: string}).escapedText === 'exports'
-    && ts.isIdentifier(node.expression.left.name)
+    && ts.isIdentifier(node.expression.left.expression)  // is it 'exports'
+    && ts.idText(node.expression.left.expression) === 'exports'
+    && ts.isIdentifier(node.expression.left.name)  // is it 'default'
     && ts.idText(node.expression.left.name) === 'default'
-    && node.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken
-    // && right.kind === ts.SyntaxKind.TrueKeyword
+    && node.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken // '='
     && ts.isIdentifier(node.expression.right);
 
+  /** A ts.TransformerFactory which removes 'exports["default"]' statements */
   const removeExportsDefault = ignoreNodeAfterBuilder(
     ts.SyntaxKind.ExpressionStatement,
     exportsDefaultNodeFilter,
@@ -189,7 +204,7 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   // ## Exports
   // Exports are transpiled to variables 'exports' and 'module.exports'
 
-  const pjson = require('../package.json');
+  const pjson = require('../package.json');  // ugly hack
 
   // Include an exports object in all files.
   output = `// Compiled using ${pjson.name} ${pjson.version} (TypeScript ${ts.version})
@@ -205,6 +220,14 @@ ${output}`;
 
   interface KeyedMap { [keys: string]: any; }
 
+  /**
+   * A 'good enough' recursive Object.assign like function
+   * Properties from sources are add or overwriten on target.
+   * If the value is a object, then recursion is applied
+   * If the value is an array, then concatenation occurs
+   * @param {KeyedMap} target The target object to mutate.
+   * @param {KeyedMap[]} tar...sourcesget one or more objects to assign.
+   */
   function deepAssign(target: KeyedMap, ...sources: KeyedMap[]): KeyedMap {
 
     for (const source of sources) {
