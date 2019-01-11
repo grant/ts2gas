@@ -9,7 +9,22 @@ import * as ts from 'typescript';
 const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
 
   /**
+   *  Create a commented-out statement
+   * @param {ts.Node} node The node to coment-out.
+   */
+  function createCommentedStatement<T extends ts.Node>(node: T): T {
+    const ignoredNode = ts.createNotEmittedStatement(node) as unknown as T;
+    ts.addSyntheticTrailingComment(
+      ignoredNode,
+      ts.SyntaxKind.SingleLineCommentTrivia,
+      node.getText().replace('\n', '\\n'),
+    );
+    return ignoredNode;
+  }
+
+  /**
    * Create a 'before' Transformer callback function
+   * It use 'createCommentedStatement' to comment-out filtered node
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
   const ignoreNodeBeforeBuilder = (nodeFilter: NodeFilter): TransformerFactory =>
@@ -18,9 +33,23 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
 
       function visitNode <T extends ts.Node>(node: T): T {
         if(nodeFilter(node)) {
-          // transform the node to ignore into a ts.NotEmittedStatement
-          return ts.createNotEmittedStatement(node) as unknown as T;
+          return createCommentedStatement(node);
         }
+        return ts.visitEachChild(node, visitNode, context);  // resume processing
+      }
+    };
+
+  /**
+   * Create a 'before' Transformer callback function
+   * It use applies the 'NoSubstitution' flag on every node
+   * @param {NodeFilter} nodeFilter The node visitor used to transform (unused here).
+   */
+  const noSubstitutionBeforeBuilder = (nodeFilter: NodeFilter): TransformerFactory =>
+    (context: ts.TransformationContext) => {
+      return (sf: ts.SourceFile): ts.SourceFile => visitNode(sf);
+
+      function visitNode <T extends ts.Node>(node: T): T {
+        ts.setEmitFlags(node, ts.EmitFlags.NoSubstitution);
         return ts.visitEachChild(node, visitNode, context);  // resume processing
       }
     };
@@ -45,41 +74,11 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
       return (file: ts.SourceFile) => file;
     };
 
-  // the following attributes 'autoGenerateId' and 'original' are not exposed by ts
-  interface InternalNode extends ts.Identifier {
-    original?: ts.Node;
-  }
-  interface InternalIdentifier extends ts.Identifier, InternalNode {
-    autoGenerateId?: number;
-  }
-  // little helper to reveal the internals
-  function isTsIdentifier(node: ts.Node): node is InternalIdentifier { return ts.isIdentifier(node); }
-
-  /**
-   * Create an 'after' Transformer callback function to restore original identifier
-   * @param {ts.SyntaxKind} kind the kind of node to filter.
-   * @param {NodeFilter} nodeFilter The node visitor used to transform.
-   */
-  const restoreImportIdBuilder = (kind: ts.SyntaxKind, nodeFilter: NodeFilter): TransformerFactory =>
-    (context: ts.TransformationContext) => {
-      const previousOnSubstituteNode = context.onSubstituteNode;
-      context.enableSubstitution(kind);
-      context.onSubstituteNode = (hint, node) => {
-        node = previousOnSubstituteNode(hint, node);
-        if (
-          nodeFilter(node)
-          && isTsIdentifier(node) && node.autoGenerateId
-          && node.original && ts.isImportDeclaration(node.original)
-          && node.original.moduleSpecifier && ts.isStringLiteral(node.original.moduleSpecifier)
-        ) {
-          return ts.createIdentifier(`${node.original.moduleSpecifier.text}`);
-        }
-        return node;
-      };
-      return (file: ts.SourceFile) => file;
-    };
-
   // Before transpiling, apply these touch-ups:
+  const dummyFilter = (node: ts.Node): node is ts.Identifier => {
+    return ts.isIdentifier(node);
+  };
+  const noSubstitution = noSubstitutionBeforeBuilder(dummyFilter);
 
   // ## Imports
   // Some editors (like IntelliJ) automatically import identifiers.
@@ -92,12 +91,6 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
 
   const ignoreImport = ignoreNodeBeforeBuilder(importNodeFilter);
 
-  /** restore ts.Identifier original text */
-  const identifierNode = (node: ts.Node): node is ts.Identifier => ts.isIdentifier(node);
-  const restoreIdentifier = restoreImportIdBuilder(
-    ts.SyntaxKind.Identifier,
-    identifierNode,
-  );
   // source = source.replace(/^.*import /mg, '// import ');
 
   // ## Exports
@@ -160,6 +153,7 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     compilerOptions: {
       noImplicitUseStrict: true,
       experimentalDecorators: true,
+      // removeComments: true,
       // pretty: true,
     },
     // the following property is to document this little known feature
@@ -175,8 +169,8 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
       module: ts.ModuleKind.None,
     },
     transformers: {
-      before: [ignoreExportFrom, ignoreImport],
-      after: [restoreIdentifier, removeExportEsModule, removeExportsDefault],
+      before: [noSubstitution, ignoreExportFrom, ignoreImport],
+      after: [removeExportEsModule, removeExportsDefault],
     },
   };
 
@@ -239,7 +233,7 @@ ${output}`;
         if (source.hasOwnProperty(key)) {
           const value: unknown = source[key];
           if(isArray(value)) {
-            target[key] = isArray(targetValue) ? targetValue.concat(value) : value;
+            target[key] = isArray(targetValue) ? [...targetValue, ...value] : value;
           } else if (isObject(value)) {
             target[key] = deepAssign(isObject(targetValue) ? targetValue : {}, value);
           } else if (typeof value !== 'undefined') {
