@@ -5,7 +5,7 @@
 A function that transpiles TypeScript to Google Apps Script.
 
 ```ts
-ts2gas(code: string): string
+ts2gas(code: string, transpileOptions?: ts.TranspileOptions): string
 ```
 
 For example the code below
