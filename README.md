@@ -73,7 +73,7 @@ Transpiler is called with this default *ts.TranspileOptions* object
 ts2gas can accepts a custom *ts.TranspileOptions* object as second parameter.
 
 ```ts
-ts2gas(code: string, transpileOptions: ts.TranspileOptions): string
+ts2gas(source: string, transpileOptions: ts.TranspileOptions = {}): string
 ```
 
 Note that the following compilerOptions cannot be changed: `target`, `noLib`, `noResolve`, `module`
