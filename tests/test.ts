@@ -107,6 +107,7 @@ export class Client {
   /** URL to the login endpoint */
   private readonly signinUrl: string;
 }
+export function foo() {}
 export default Client;
 export
   { ZipCodeValidator };
@@ -128,6 +129,20 @@ const subModule3 = new SubModule3();`);
 export const goes = 'Goes';
 export function The(): void {}
 export class Wza {}
+}`);
+  },
+  testThisKeyword: () => {
+    printBeforeAndAfter(
+`// code in this test semantically incorrect
+getAllInstancesByUnits(): UnitMemberInstances {
+  for (const row of data) {
+    // following 'this' keyword should remain as is
+    const instances = row.slice(this.columnOffset - 1);
+    instances.forEach((e, i) => {
+      // following 'this' keyword must be substitute with '_this'
+      const u = this.toUnitInstance(e);
+    });
+  }
 }`);
   },
   testHelloWorld: () => {
