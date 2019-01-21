@@ -49,7 +49,9 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
       return (sf: ts.SourceFile): ts.SourceFile => visitNode(sf);
 
       function visitNode <T extends ts.Node>(node: T): T {
-        ts.setEmitFlags(node, ts.EmitFlags.NoSubstitution);
+        if(nodeFilter(node)) {
+          ts.setEmitFlags(node, ts.EmitFlags.NoSubstitution);
+        }
         return ts.visitEachChild(node, visitNode, context);  // resume processing
       }
     };
@@ -75,10 +77,10 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     };
 
   // Before transpiling, apply these touch-ups:
-  const dummyFilter = (node: ts.Node): node is ts.Identifier => {
+  const identifierFilter = (node: ts.Node): node is ts.Identifier => {
     return ts.isIdentifier(node);
   };
-  const noSubstitution = noSubstitutionBeforeBuilder(dummyFilter);
+  const noSubstitution = noSubstitutionBeforeBuilder(identifierFilter);
 
   // ## Imports
   // Some editors (like IntelliJ) automatically import identifiers.
