@@ -152,6 +152,15 @@ getAllInstancesByUnits(): UnitMemberInstances {
 let words = ['hello', 'world'];
 writeToLog(\`\${words.join(' ')}\`);`);
   },
+  testDefaultParams: () => {
+    printBeforeAndAfter(
+`function JsonResponseHandler(url: string,
+    query = {},
+    params = {muteHttpExceptions: true},
+    cacheName: string, cacheTime = 3600) {
+  // ...
+}`);
+  },
 };
 // Run tests
 console.log('## TESTS ##');
