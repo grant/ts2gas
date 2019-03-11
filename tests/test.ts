@@ -121,7 +121,13 @@ import { SubModule } from "TypeScriptModule2";
 const subModule = new SubModule();
 import { SubModule2, SubModule3 } from "TypeScriptModule3";
 const subModule2 = new SubModule2();
-const subModule3 = new SubModule3();`);
+const subModule3 = new SubModule3();
+import {
+  SubModule4,
+  SubModule5
+} from "TypeScriptModule4";
+const subModule4 = new SubModule4();
+const subModule5 = new SubModule5();`);
         },
   testNamespace: () => {
     printBeforeAndAfter(

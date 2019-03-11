@@ -17,7 +17,7 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     ts.addSyntheticTrailingComment(
       ignoredNode,
       ts.SyntaxKind.SingleLineCommentTrivia,
-      node.getText().replace('\n', '\\n'),
+      node.getText().replace(/\n/g, '\\n'),
     );
     return ignoredNode;
   }
