@@ -49,7 +49,11 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
       return (sf: ts.SourceFile): ts.SourceFile => visitNode(sf);
 
       function visitNode <T extends ts.Node>(node: T): T {
-        if(nodeFilter(node)) {
+        if(
+          nodeFilter(node)  // node kind is Identifier
+          // do not process if parent kind is EnumDeclaration
+          && !(node.parent && ts.isEnumDeclaration(node.parent))
+        ) {
           ts.setEmitFlags(node, ts.EmitFlags.NoSubstitution);
         }
         return ts.visitEachChild(node, visitNode, context);  // resume processing
