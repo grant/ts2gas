@@ -166,10 +166,10 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     // renamedDependencies: { SomeName: 'SomeOtherName' },
   };
 
-  /** These the settings are always used */
+  /** These the settings are always used and cannot be overriden */
   const statics: ts.TranspileOptions = {
     compilerOptions: {
-      emitDeclarationOnly: false,
+      emitDeclarationOnly: false,  // ts.transpileModule() will crash if set to true
       target: ts.ScriptTarget.ES3,
       noLib: true,
       noResolve: true,
