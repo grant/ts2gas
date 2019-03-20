@@ -169,6 +169,7 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   /** These the settings are always used */
   const statics: ts.TranspileOptions = {
     compilerOptions: {
+      emitDeclarationOnly: false,
       target: ts.ScriptTarget.ES3,
       noLib: true,
       noResolve: true,
