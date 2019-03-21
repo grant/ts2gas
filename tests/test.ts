@@ -167,13 +167,13 @@ writeToLog(\`\${words.join(' ')}\`);`);
   // ...
 }`);
   },
-  testIssue26Export: () => {
+  testExportImportWorkaraoundPart1: () => {
     printBeforeAndAfter(
 `export const ICONS = {
   email: \`foo.png\`,
 };`);
   },
-  testIssue26Import: () => {
+  testExportImportWorkaraoundPart2: () => {
     printBeforeAndAfter(
 `import { ICONS } from './package';
 
@@ -185,7 +185,7 @@ declare namespace exports {
 exports.ICONS.email;
 `);
   },
-  testIssue26Namespaced: () => {
+  testExportImportNamespaceWorkaround: () => {
     printBeforeAndAfter(
 `namespace Package {
   export function foo() {}
