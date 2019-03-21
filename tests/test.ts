@@ -167,6 +167,35 @@ writeToLog(\`\${words.join(' ')}\`);`);
   // ...
 }`);
   },
+  testIssue26Export: () => {
+    printBeforeAndAfter(
+`export const ICONS = {
+  email: \`foo.png\`,
+};`);
+  },
+  testIssue26Import: () => {
+    printBeforeAndAfter(
+`import { ICONS } from './package';
+
+type _i_ICONS = typeof ICONS;
+declare namespace exports {
+  const ICONS: _i_ICONS;
+}
+
+exports.ICONS.email;
+`);
+  },
+  testIssue26Namespaced: () => {
+    printBeforeAndAfter(
+`namespace Package {
+  export function foo() {}
+}
+
+Package.foo();
+
+const nameIWantForMyImports = Package.foo;
+nameIWantForMyImports();`);
+  },
 };
 // Run tests
 console.log('## TESTS ##');
