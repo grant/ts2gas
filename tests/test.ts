@@ -257,7 +257,7 @@ let z = { text: "hello" } as const;  // Type { readonly text: "hello" }`);
   },
   testTypeScript_34x_globalThis: () => {
     printBeforeAndAfter(
-`// Const contexts for literal expressions
+`// \`globalThis\`
 // Add globalThis
 // @Filename: one.ts
 var a = 1;
