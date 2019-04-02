@@ -196,6 +196,76 @@ Package.foo();
 const nameIWantForMyImports = Package.foo;
 nameIWantForMyImports();`);
   },
+  testTypeScript_34x_highOrder: () => {
+    printBeforeAndAfter(
+`// Higher order function type inference
+declare function pipe<A extends any[], B, C>(ab: (...args: A) => B, bc: (b: B) => C): (...args: A) => C;
+
+declare function list<T>(a: T): T[];
+declare function box<V>(x: V): { value: V };
+
+const listBox = pipe(list, box);  // <T>(a: T) => { value: T[] }
+const boxList = pipe(box, list);  // <V>(x: V) => { value: V }[]
+
+const x1 = listBox(42);  // { value: number[] }
+const x2 = boxList('hello');  // { value: string }[]
+
+const flip = <A, B, C>(f: (a: A, b: B) => C) => (b: B, a: A) => f(a, b);
+const zip = <T, U>(x: T, y: U): [T, U] => [x, y];
+const flipped = flip(zip);  // <T, U>(b: U, a: T) => [T, U]
+
+const t1 = flipped(10, 'hello');  // [string, number]
+const t2 = flipped(true, 0);  // [number, boolean]`);
+  },
+//   testTypeScript_34x_improvedReadonly: () => {
+//     printBeforeAndAfter(
+// `// Improved support for read-only arrays and tuples
+// function f1(mt: [number, number], rt: readonly [number, number]) {
+//   mt[0] = 1;  // Ok
+//   rt[0] = 1;  // Error, read-only element
+// }
+
+// function f2(ma: string[], ra: readonly string[], mt: [string, string], rt: readonly [string, string]) {
+//   ma = ra;  // Error
+//   ma = mt;  // Ok
+//   ma = rt;  // Error
+//   ra = ma;  // Ok
+//   ra = mt;  // Ok
+//   ra = rt;  // Ok
+//   mt = ma;  // Error
+//   mt = ra;  // Error
+//   mt = rt;  // Error
+//   rt = ma;  // Error
+//   rt = ra;  // Error
+//   rt = mt;  // Ok
+// }
+
+// type ReadWrite<T> = { -readonly [P in keyof T] : T[P] };
+
+// type T0 = Readonly<string[]>;  // readonly string[]
+// type T1 = Readonly<[number, number]>;  // readonly [number, number]
+// type T2 = Partial<Readonly<string[]>>;  // readonly (string | undefined)[]
+// type T3 = Readonly<Partial<string[]>>;  // readonly (string | undefined)[]
+// type T4 = ReadWrite<Required<T3>>;  // string[]`);
+//   },
+  testTypeScript_34x_constContext: () => {
+    printBeforeAndAfter(
+`// Const contexts for literal expressions
+let x = 10 as const;  // Type 10
+let y = <const> [10, 20];  // Type readonly [10, 20]
+let z = { text: "hello" } as const;  // Type { readonly text: "hello" }`);
+  },
+  testTypeScript_34x_globalThis: () => {
+    printBeforeAndAfter(
+`// Const contexts for literal expressions
+// Add globalThis
+// @Filename: one.ts
+var a = 1;
+var b = 2;
+// @Filename: two.js
+this.c = 3;
+const total = globalThis.a + this.b + window.c + this.unknown;`);
+  },
 };
 // Run tests
 console.log('## TESTS ##');
