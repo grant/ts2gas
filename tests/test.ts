@@ -225,6 +225,8 @@ function f1(mt: [number, number], rt: readonly [number, number]) {
   // rt[0] = 1;  // Error, read-only element
 }
 
+// next function statement crashes on the 'readonly string[]'
+// (bugfix is in typescript 3.5 codebase)
 // function f2(ma: string[], ra: readonly string[], mt: [string, string], rt: readonly [string, string]) {
 //   ma = ra;  // Error
 //   ma = mt;  // Ok
