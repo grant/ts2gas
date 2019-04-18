@@ -167,12 +167,17 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   };
 
   /** These the settings are always used and cannot be overriden */
+  /**
+   * Extra compiler options that will unconditionally be used by this function are
+   * - isolatedModules = true
+   * - allowNonTsExtensions = true
+   * - noLib = true
+   * - noResolve = true
+   */
   const statics: ts.TranspileOptions = {
     compilerOptions: {
       emitDeclarationOnly: false,  // ts.transpileModule() will crash if set to true
       target: ts.ScriptTarget.ES3,
-      noLib: true,
-      noResolve: true,
       module: ts.ModuleKind.None,
     },
     transformers: {
