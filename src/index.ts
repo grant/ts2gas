@@ -170,7 +170,6 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   /**
    * Extra compiler options that will unconditionally be used by this function are
    * - isolatedModules = true
-   * - allowNonTsExtensions = true
    * - noLib = true
    * - noResolve = true
    */
