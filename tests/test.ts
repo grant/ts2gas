@@ -9,7 +9,7 @@ function printBeforeAndAfter(code: string) {
   console.log('v--TS--v');
   console.log(code);
   console.log('–––');
-  console.log(ts2gas(code), '^--GS--^'); // Prevents newline
+  console.log(`${ts2gas(code)}^--GS--^`); // Prevents newline
 }
 
 interface Tests {
