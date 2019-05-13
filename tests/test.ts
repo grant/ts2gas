@@ -9,7 +9,7 @@ function printBeforeAndAfter(code: string) {
   console.log('v--TS--v');
   console.log(code);
   console.log('–––');
-  console.log(ts2gas(code), '^--GS--^'); // Prevents newline
+  console.log(`${ts2gas(code)}^--GS--^`); // Prevents newline
 }
 
 interface Tests {
@@ -225,22 +225,21 @@ function f1(mt: [number, number], rt: readonly [number, number]) {
   // rt[0] = 1;  // Error, read-only element
 }
 
-// next function statement crashes on the 'readonly string[]'
-// (bugfix is in typescript 3.5 codebase)
-// function f2(ma: string[], ra: readonly string[], mt: [string, string], rt: readonly [string, string]) {
-//   ma = ra;  // Error
-//   ma = mt;  // Ok
-//   ma = rt;  // Error
-//   ra = ma;  // Ok
-//   ra = mt;  // Ok
-//   ra = rt;  // Ok
-//   mt = ma;  // Error
-//   mt = ra;  // Error
-//   mt = rt;  // Error
-//   rt = ma;  // Error
-//   rt = ra;  // Error
-//   rt = mt;  // Ok
-// }
+// next function declaration crashes with Typescript version < 3.4.4
+function f2(ma: string[], ra: readonly string[], mt: [string, string], rt: readonly [string, string]) {
+  //   ma = ra;  // Error
+  ma = mt;  // Ok
+  //   ma = rt;  // Error
+  ra = ma;  // Ok
+  ra = mt;  // Ok
+  ra = rt;  // Ok
+  //   mt = ma;  // Error
+  //   mt = ra;  // Error
+  //   mt = rt;  // Error
+  //   rt = ma;  // Error
+  //   rt = ra;  // Error
+  rt = mt;  // Ok
+}
 
 type ReadWrite<T> = { -readonly [P in keyof T] : T[P] };
 

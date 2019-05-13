@@ -9,6 +9,7 @@ ts2gas(code: string, transpileOptions?: ts.TranspileOptions): string
 ```
 
 For example the code below
+
 ```ts
 const writeToLog = (message: string) => console.info(message);
 
@@ -17,6 +18,7 @@ writeToLog(`${words.join(' ')}`);
 ```
 
 gets transpiled into
+
 ```javascript
 // Compiled using ts2gas 1.3.0 (TypeScript 3.2.2)
 var exports = exports || {};
@@ -28,7 +30,7 @@ writeToLog("" + words.join(' '));
 
 ## Install
 
-```
+```shell
 yarn add ts2gas
 ```
 
@@ -58,10 +60,11 @@ Transpiler is called with this default *ts.TranspileOptions* object
 ```ts
 {
   compilerOptions: {
-    target: ts.ScriptTarget.ES3,
+    isolatedModules: true,
     noLib: true,
     noResolve: true,
-    module: ts.ModuleKind.None,
+    target: "ES3",
+    module: "None",
     noImplicitUseStrict: true,
     experimentalDecorators: true,
   },
@@ -76,11 +79,21 @@ ts2gas can accepts a custom *ts.TranspileOptions* object as second parameter.
 ts2gas(source: string, transpileOptions: ts.TranspileOptions = {}): string
 ```
 
-Note that the following compilerOptions cannot be changed: `target`, `noLib`, `noResolve`, `module`
+Note that the following compilerOptions cannot be changed:
+
+```ts
+{
+  isolatedModules: true,
+  noLib: true,
+  noResolve: true,
+  target: "ES3",
+  module: "None",
+}
+```
 
 ## TypeScript Tests
 
-Some samples of TypeScript derived from https://angular-2-training-book.rangle.io/handout/features/
+Some samples of TypeScript derived from <https://angular-2-training-book.rangle.io/handout/features/>
 
 ```ts
 class Hamburger {
