@@ -81,11 +81,15 @@ ts2gas(source: string, transpileOptions: ts.TranspileOptions = {}): string
 
 Note that the following compilerOptions cannot be changed:
 
-- isolatedModules = true
-- noLib = true
-- noResolve = true
-- target = "ES3"
-- module = "None"
+```ts
+{
+  isolatedModules: true,
+  noLib: true,
+  noResolve: true,
+  target: "ES3",
+  module: "None",
+}
+```
 
 ## TypeScript Tests
 
