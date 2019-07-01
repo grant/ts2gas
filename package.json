@@ -23,10 +23,10 @@
   },
   "homepage": "https://github.com/grant/ts2gas#readme",
   "dependencies": {
-    "typescript": "^3.4.4"
+    "typescript": "^3.5.2"
   },
   "devDependencies": {
-    "@types/node": "^10.12.18",
-    "tslint": "^5.11.0"
+    "@types/node": "^10.14.10",
+    "tslint": "^5.18.0"
   }
 }
