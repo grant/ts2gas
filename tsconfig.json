@@ -2,6 +2,7 @@
   "compileOnSave": true,
   "compilerOptions": {
     "declaration": true,
+    "esModuleInterop": true,
     "target": "es2017",  // fully supported with node ^8.10.0 (cf. https://node.green/)
     "lib": ["es2017"],
     "strict": true,

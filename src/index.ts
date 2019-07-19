@@ -1,4 +1,4 @@
-import * as ts from 'typescript';
+import ts from 'typescript';
 
 /**
  * Transpiles a TypeScript file into a valid Apps Script file.

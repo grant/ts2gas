@@ -1,4 +1,4 @@
-import * as ts2gas from '../src/index';
+import ts2gas from '../src/index';
 
 /**
  * Prints the transpiled code before and after transpilation.
