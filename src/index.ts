@@ -157,8 +157,9 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   /** These settings can be overriden */
   const defaults: ts.TranspileOptions = {
     compilerOptions: {
-      noImplicitUseStrict: true,
       experimentalDecorators: true,
+      noImplicitUseStrict: true,
+      target: ts.ScriptTarget.ES3,
       // removeComments: true,
       // pretty: true,
     },
@@ -166,8 +167,9 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     // renamedDependencies: { SomeName: 'SomeOtherName' },
   };
 
-  /** These the settings are always used and cannot be overriden */
   /**
+   * These the settings are always used and cannot be overriden 
+   * 
    * Extra compiler options that will unconditionally be used by this function are
    * - isolatedModules = true
    * - noLib = true
@@ -176,7 +178,6 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   const statics: ts.TranspileOptions = {
     compilerOptions: {
       emitDeclarationOnly: false,  // ts.transpileModule() will crash if set to true
-      target: ts.ScriptTarget.ES3,
       module: ts.ModuleKind.None,
     },
     transformers: {
@@ -225,6 +226,10 @@ ${output}`;
 
   interface KeyedMap { [keys: string]: any; }
 
+  // type guards helpers
+  const { isArray } = Array;
+  const isObject = (v: unknown): v is { [keys: string]: any } => { return typeof v === 'object'; };
+
   /**
    * A 'good enough' recursive Object.assign like function
    * Properties from sources are add or overwriten on target.
@@ -255,12 +260,12 @@ ${output}`;
     }
 
     return target;
-
-    // type guards helpers
-    function isArray(v: unknown): v is any[] { return Array.isArray(v); }
-    function isObject(v: unknown): v is { [keys: string]: any } { return typeof v === 'object'; }
   }
 
 };
 
-export = ts2gas;
+export default ts2gas;
+
+// For CommonJS default export support
+module.exports = ts2gas;
+Object.defineProperty(module.exports, 'default', { enumerable: false, value: ts2gas });
