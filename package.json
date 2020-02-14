@@ -1,6 +1,6 @@
 {
   "name": "ts2gas",
-  "version": "3.4.4",
+  "version": "3.5.0",
   "description": "A function that transpiles TypeScript to Google Apps Script.",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -24,10 +24,10 @@
   },
   "homepage": "https://github.com/grant/ts2gas#readme",
   "dependencies": {
-    "typescript": "^3.5.3"
+    "typescript": "^3.7.5"
   },
   "devDependencies": {
-    "@types/node": "^10.14.13",
-    "tslint": "^5.18.0"
+    "@types/node": "^10.17.15",
+    "tslint": "^6.0.0"
   }
 }
