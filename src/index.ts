@@ -1,5 +1,9 @@
 import ts from 'typescript';
 
+// type guards helpers
+const { isArray } = Array;
+const isObject = (v: unknown): v is { [keys: string]: any } => typeof v === 'object';
+
 /**
  * Transpiles a TypeScript file into a valid Apps Script file.
  * @param {string} source The TypeScript source code as a string.
@@ -168,8 +172,8 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   };
 
   /**
-   * These the settings are always used and cannot be overriden 
-   * 
+   * These the settings are always used and cannot be overriden
+   *
    * Extra compiler options that will unconditionally be used by this function are
    * - isolatedModules = true
    * - noLib = true
@@ -226,10 +230,6 @@ ${output}`;
 
   interface KeyedMap { [keys: string]: any; }
 
-  // type guards helpers
-  const { isArray } = Array;
-  const isObject = (v: unknown): v is { [keys: string]: any } => { return typeof v === 'object'; };
-
   /**
    * A 'good enough' recursive Object.assign like function
    * Properties from sources are add or overwriten on target.
@@ -264,8 +264,4 @@ ${output}`;
 
 };
 
-export default ts2gas;
-
-// For CommonJS default export support
-module.exports = ts2gas;
-Object.defineProperty(module.exports, 'default', { enumerable: false, value: ts2gas });
+export = ts2gas;
