@@ -2,6 +2,7 @@
   "name": "ts2gas",
   "version": "3.5.0",
   "description": "A function that transpiles TypeScript to Google Apps Script.",
+  "files": ["src"],
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "scripts": {
