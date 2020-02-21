@@ -3,11 +3,10 @@
   "version": "3.5.0",
   "description": "A function that transpiles TypeScript to Google Apps Script.",
   "files": [
-    "src/index.js",
-    "src/index.d.ts"
+    "src"
   ],
-  "main": "src/index.js",
-  "types": "src/index.d.ts",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "dryrun": "npm publish --dry-run",
