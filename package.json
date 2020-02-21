@@ -2,7 +2,9 @@
   "name": "ts2gas",
   "version": "3.5.0",
   "description": "A function that transpiles TypeScript to Google Apps Script.",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "scripts": {
@@ -18,17 +20,17 @@
   "author": "Grant Timmerman",
   "license": "MIT",
   "engines": {
-    "node": ">=8.10.0"
+    "node": ">= 10.3.0"
   },
   "bugs": {
     "url": "https://github.com/grant/ts2gas/issues"
   },
   "homepage": "https://github.com/grant/ts2gas#readme",
   "dependencies": {
-    "typescript": "^3.7.5"
+    "typescript": "^3.8.2"
   },
   "devDependencies": {
-    "@types/node": "^10.17.15",
+    "@types/node": "^10.17.16",
     "tslint": "^6.0.0"
   }
 }
