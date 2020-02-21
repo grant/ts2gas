@@ -60,13 +60,13 @@ Transpiler is called with this default *ts.TranspileOptions* object
 ```ts
 {
   compilerOptions: {
+    experimentalDecorators: true,
     isolatedModules: true,
+    module: "None",
+    noImplicitUseStrict: true,
     noLib: true,
     noResolve: true,
     target: "ES3",
-    module: "None",
-    noImplicitUseStrict: true,
-    experimentalDecorators: true,
   },
   // the following property is to document this little known feature
   // renamedDependencies: { SomeName: 'SomeOtherName' },
@@ -84,10 +84,9 @@ Note that the following compilerOptions cannot be changed:
 ```ts
 {
   isolatedModules: true,
+  module: "None",
   noLib: true,
   noResolve: true,
-  target: "ES3",
-  module: "None",
 }
 ```
 

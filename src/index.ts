@@ -1,5 +1,9 @@
 import ts from 'typescript';
 
+// type guards helpers
+const { isArray } = Array;
+const isObject = (v: unknown): v is { [keys: string]: any } => typeof v === 'object';
+
 /**
  * Transpiles a TypeScript file into a valid Apps Script file.
  * @param {string} source The TypeScript source code as a string.
@@ -157,8 +161,9 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   /** These settings can be overriden */
   const defaults: ts.TranspileOptions = {
     compilerOptions: {
-      noImplicitUseStrict: true,
       experimentalDecorators: true,
+      noImplicitUseStrict: true,
+      target: ts.ScriptTarget.ES3,
       // removeComments: true,
       // pretty: true,
     },
@@ -166,8 +171,9 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
     // renamedDependencies: { SomeName: 'SomeOtherName' },
   };
 
-  /** These the settings are always used and cannot be overriden */
   /**
+   * These the settings are always used and cannot be overriden
+   *
    * Extra compiler options that will unconditionally be used by this function are
    * - isolatedModules = true
    * - noLib = true
@@ -176,7 +182,6 @@ const ts2gas = (source: string, transpileOptions: ts.TranspileOptions = {}) => {
   const statics: ts.TranspileOptions = {
     compilerOptions: {
       emitDeclarationOnly: false,  // ts.transpileModule() will crash if set to true
-      target: ts.ScriptTarget.ES3,
       module: ts.ModuleKind.None,
     },
     transformers: {
@@ -255,10 +260,6 @@ ${output}`;
     }
 
     return target;
-
-    // type guards helpers
-    function isArray(v: unknown): v is any[] { return Array.isArray(v); }
-    function isObject(v: unknown): v is { [keys: string]: any } { return typeof v === 'object'; }
   }
 
 };
