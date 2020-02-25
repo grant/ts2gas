@@ -3,8 +3,8 @@
   "compilerOptions": {
     "declaration": true,
     "esModuleInterop": true,
-    "target": "es2017",  // fully supported with node ^8.10.0 (cf. https://node.green/)
-    "lib": ["esnext"],
+    "target": "ES2017",  // fully supported with node ^8.10.0 (cf. https://node.green/)
+    "lib": ["ESNext"],
     "strict": true,
     "moduleResolution": "node",
     "module": "commonjs",
