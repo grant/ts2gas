@@ -1,6 +1,14 @@
-import ts, {
+import {
   addSyntheticTrailingComment,
+  createBinary,
+  createIdentifier,
   createNotEmittedStatement,
+  createObjectLiteral,
+  createPropertyAssignment,
+  createToken,
+  createVariableDeclaration,
+  createVariableDeclarationList,
+  createVariableStatement,
   EmitFlags,
   idText,
   isBinaryExpression,
@@ -13,6 +21,7 @@ import ts, {
   isPropertyAccessExpression,
   ModuleKind,
   Node,
+  NodeFlags,
   ScriptTarget,
   setEmitFlags,
   SourceFile,
@@ -21,6 +30,7 @@ import ts, {
   TransformerFactory,
   transpileModule,
   TranspileOptions,
+  updateSourceFileNode,
   version,
   visitEachChild,
   visitNode,
@@ -31,8 +41,7 @@ const { get, ownKeys, set } = Reflect;
 
 // type guards helpers
 const { isArray } = Array;
-const isObject = (v: unknown): v is object =>
-  Object.prototype.toString.call(v) === '[object Object]';
+const isObject = (v: unknown): v is object => Object.prototype.toString.call(v) === '[object Object]';
 
 /**
  * A 'good enough' recursive Object.assign like function
@@ -50,17 +59,9 @@ const deepAssign = (target: object, ...sources: object[]): object => {
       if (source.hasOwnProperty(key)) {
         const value = get(source, key);
         if (isArray(value)) {
-          set(
-            target,
-            key,
-            isArray(targetValue) ? [...targetValue, ...value] : value,
-          );
+          set(target, key, isArray(targetValue) ? [...targetValue, ...value] : value);
         } else if (isObject(value)) {
-          set(
-            target,
-            key,
-            deepAssign(isObject(targetValue) ? targetValue : {}, value),
-          );
+          set(target, key, deepAssign(isObject(targetValue) ? targetValue : {}, value));
         } else if (typeof value !== 'undefined') {
           set(target, key, value);
         }
@@ -73,13 +74,8 @@ const deepAssign = (target: object, ...sources: object[]): object => {
 
 // Transformer types
 type NodeFilter = (node: Node) => boolean;
-type BeforeTransformerFactory = (
-  filter: NodeFilter,
-) => TransformerFactory<SourceFile>;
-type AfterTransformerFactory = (
-  kind: SyntaxKind,
-  filter: NodeFilter,
-) => TransformerFactory<SourceFile>;
+type BeforeTransformerFactory = (filter: NodeFilter) => TransformerFactory<SourceFile>;
+type AfterTransformerFactory = (kind: SyntaxKind, filter: NodeFilter) => TransformerFactory<SourceFile>;
 
 /**
  * Transpiles a TypeScript file into a valid Apps Script file.
@@ -96,7 +92,7 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   /**
    * Filter any expression statement assigning to 'exports["default"]'
    */
-  const exportsDefaultNodeFilter: NodeFilter = node =>
+  const exportsDefaultNodeFilter: NodeFilter = (node) =>
     isExpressionStatement(node) &&
     isBinaryExpression(node.expression) && // is it a binary expression
     isPropertyAccessExpression(node.expression.left) &&
@@ -110,7 +106,7 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   /**
    * Filter any added `exports.__esModule` expression statement
    */
-  const exportEsModuleNodeFilter: NodeFilter = node =>
+  const exportEsModuleNodeFilter: NodeFilter = (node) =>
     isExpressionStatement(node) &&
     node.pos === -1 &&
     node.end === -1 && // hint it was added by tranpiler
@@ -123,20 +119,18 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   /**
    * Filter any `export`...`from` declaration
    */
-  const exportFromNodeFilter: NodeFilter = node =>
-    isExportDeclaration(node) && // 'export ...'
-    !!node.getChildren().find(e => e.kind === SyntaxKind.FromKeyword); // 'from'
+  const exportFromNodeFilter: NodeFilter = (node) =>
+    isExportDeclaration(node) && !!node.getChildren().find((e) => e.kind === SyntaxKind.FromKeyword);
 
   /**
    * Filter any import declaration
    */
-  const importNodeFilter: NodeFilter = node =>
-    isImportEqualsDeclaration(node) || isImportDeclaration(node);
+  const importNodeFilter: NodeFilter = (node) => isImportEqualsDeclaration(node) || isImportDeclaration(node);
 
   /**
    * Filter any identifier
    */
-  const identifierFilter: NodeFilter = node => isIdentifier(node);
+  const identifierFilter: NodeFilter = (node) => isIdentifier(node);
 
   // Transformers
 
@@ -144,13 +138,9 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    *  Create a commented-out statement
    * @param {Node} node The node to comment-out.
    */
-  const createCommentedStatement: Transformer<Node> = node => {
+  const createCommentedStatement: Transformer<Node> = (node) => {
     const ignoredNode = createNotEmittedStatement(node);
-    addSyntheticTrailingComment(
-      ignoredNode,
-      SyntaxKind.SingleLineCommentTrivia,
-      node.getText().replace(/\n/g, '\\n'),
-    );
+    addSyntheticTrailingComment(ignoredNode, SyntaxKind.SingleLineCommentTrivia, node.getText().replace(/\n/g, '\\n'));
     return ignoredNode;
   };
 
@@ -161,13 +151,11 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    * It use 'createCommentedStatement' to comment-out filtered node
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
-  const ignoreNodeBeforeBuilder: BeforeTransformerFactory = nodeFilter => context => {
-    const visitor: Visitor = node =>
-      nodeFilter(node)
-        ? createCommentedStatement(node)
-        : visitEachChild(node, visitor, context);
+  const ignoreNodeBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
+    const visitor: Visitor = (node) =>
+      nodeFilter(node) ? createCommentedStatement(node) : visitEachChild(node, visitor, context);
 
-    return sourceFile => visitNode(sourceFile, visitor);
+    return (sourceFile) => visitNode(sourceFile, visitor);
   };
 
   /**
@@ -175,8 +163,8 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    * It use applies the 'NoSubstitution' flag on every node
    * @param {NodeFilter} nodeFilter The node visitor used to transform (unused here).
    */
-  const noSubstitutionBeforeBuilder: BeforeTransformerFactory = nodeFilter => context => {
-    const visitor: Visitor = node => {
+  const noSubstitutionBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
+    const visitor: Visitor = (node) => {
       if (
         nodeFilter(node) && // node kind is Identifier
         // do not process if parent kind is EnumDeclaration
@@ -187,7 +175,7 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
       return visitEachChild(node, visitor, context);
     };
 
-    return sourceFile => visitNode(sourceFile, visitor);
+    return (sourceFile) => visitNode(sourceFile, visitor);
   };
 
   // `after:` transformer factories
@@ -197,10 +185,7 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    * @param {SyntaxKind} kind the kind of node to filter.
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
-  const ignoreNodeAfterBuilder: AfterTransformerFactory = (
-    kind,
-    nodeFilter,
-  ) => context => {
+  const ignoreNodeAfterBuilder: AfterTransformerFactory = (kind, nodeFilter) => (context) => {
     const previousOnSubstituteNode = context.onSubstituteNode;
 
     context.enableSubstitution(kind);
@@ -208,14 +193,14 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
       node = previousOnSubstituteNode(hint, node);
       if (nodeFilter(node)) {
         /** Do not emit this node */
-        // node = ts.createEmptyStatement();
+        // node = createEmptyStatement();
         node = createNotEmittedStatement(node);
         // node = createCommentedStatement(node);
       }
       return node;
     };
 
-    return sourceFile => sourceFile;
+    return (sourceFile) => sourceFile;
   };
 
   // Before transpiling, apply these touch-ups:
@@ -237,21 +222,16 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   // ## exports.__esModule
   // Remove all lines that have exports.__esModule = true
   // @see https://github.com/Microsoft/TypeScript/issues/14351
-  const removeExportEsModule = ignoreNodeAfterBuilder(
-    SyntaxKind.ExpressionStatement,
-    exportEsModuleNodeFilter,
-  );
+  const removeExportEsModule = ignoreNodeAfterBuilder(SyntaxKind.ExpressionStatement, exportEsModuleNodeFilter);
 
   // Remove default exports
   // (Transpiled `exports["default"]`)
-  const removeExportsDefault = ignoreNodeAfterBuilder(
-    SyntaxKind.ExpressionStatement,
-    exportsDefaultNodeFilter,
-  );
+  const removeExportsDefault = ignoreNodeAfterBuilder(SyntaxKind.ExpressionStatement, exportsDefaultNodeFilter);
 
-  const detectExportNodes: TransformerFactory<SourceFile> = context => sourceFile => {
-    const visitor: Visitor = node => {
-      if (addDummyModule) { // no need to look further
+  const detectExportNodes: TransformerFactory<SourceFile> = (context) => (sourceFile) => {
+    const visitor: Visitor = (node) => {
+      if (addDummyModule) {
+        // no need to look further
         return node;
       }
       if (isIdentifier(node) && idText(node) === 'exports') {
@@ -263,49 +243,44 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
     return visitNode(sourceFile, visitor);
   };
 
-  const addDummyModuleNodes: TransformerFactory<SourceFile> = () => sourceFile =>
+  const addDummyModuleNodes: TransformerFactory<SourceFile> = () => (sourceFile) =>
     addDummyModule
-      ? ts.updateSourceFileNode(sourceFile, [
-          ts.createVariableStatement(
+      ? updateSourceFileNode(sourceFile, [
+          createVariableStatement(
             undefined,
-            ts.createVariableDeclarationList(
+            createVariableDeclarationList(
               [
-                ts.createVariableDeclaration(
-                  ts.createIdentifier('exports'),
+                createVariableDeclaration(
+                  createIdentifier('exports'),
                   undefined,
-                  ts.createBinary(
-                    ts.createIdentifier('exports'),
-                    ts.createToken(ts.SyntaxKind.BarBarToken),
-                    ts.createObjectLiteral([], false),
+                  createBinary(
+                    createIdentifier('exports'),
+                    createToken(SyntaxKind.BarBarToken),
+                    createObjectLiteral([], false),
                   ),
                 ),
               ],
-              ts.NodeFlags.None,
+              NodeFlags.None,
             ),
           ),
-          ts.createVariableStatement(
+          createVariableStatement(
             undefined,
-            ts.createVariableDeclarationList(
+            createVariableDeclarationList(
               [
-                ts.createVariableDeclaration(
-                  ts.createIdentifier('module'),
+                createVariableDeclaration(
+                  createIdentifier('module'),
                   undefined,
-                  ts.createBinary(
-                    ts.createIdentifier('module'),
-                    ts.createToken(ts.SyntaxKind.BarBarToken),
-                    ts.createObjectLiteral(
-                      [
-                        ts.createPropertyAssignment(
-                          ts.createIdentifier('exports'),
-                          ts.createIdentifier('exports'),
-                        ),
-                      ],
+                  createBinary(
+                    createIdentifier('module'),
+                    createToken(SyntaxKind.BarBarToken),
+                    createObjectLiteral(
+                      [createPropertyAssignment(createIdentifier('exports'), createIdentifier('exports'))],
                       false,
                     ),
                   ),
                 ),
               ],
-              ts.NodeFlags.None,
+              NodeFlags.None,
             ),
           ),
           ...sourceFile.statements,
@@ -342,12 +317,7 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
     },
     transformers: {
       before: [noSubstitution, ignoreExportFrom, ignoreImport],
-      after: [
-        removeExportEsModule,
-        removeExportsDefault,
-        detectExportNodes,
-        addDummyModuleNodes,
-      ],
+      after: [removeExportEsModule, removeExportsDefault, detectExportNodes, addDummyModuleNodes],
     },
   };
 
@@ -360,7 +330,8 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   }
 
   // merge properties in order for proper override
-  transpileOptions = deepAssign({}, // safe to mutate
+  transpileOptions = deepAssign(
+    {}, // safe to mutate
     defaults, // default (override-able)
     transpileOptions, // user override
     statics, // statics
