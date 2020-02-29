@@ -1,0 +1,16 @@
+{
+  "arrowParens": "always",
+
+  "printWidth": 120,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "package.json",
+      "options": {
+        "tabWidth": 2
+      }
+    }
+  ]
+}

@@ -44,7 +44,7 @@ console.log(\`Hello! My name is \${name}, and I am not \${age} years old.\`);
 `let cde = ['c', 'd', 'e'];
 let scale = ['a', 'b', ...cde, 'f', 'g'];`);
   },
-  testDestructure: () => {
+  testDestructuring: () => {
     printBeforeAndAfter(
 `let jane = { firstName: 'Jane', lastName: 'Doe'};
 let john = { firstName: 'John', lastName: 'Doe', middleName: 'Smith' }
@@ -52,7 +52,7 @@ function sayName({firstName, lastName, middleName = 'N/A'}) {
   console.log(\`Hello \${firstName} \${middleName} \${lastName}\`)
 }
 sayName(jane) // -> Hello Jane N/A Doe
-sayName(john) // -> Helo John Smith Doe`);
+sayName(john) // -> Hello John Smith Doe`);
   },
   testImport: () => {
     printBeforeAndAfter(
@@ -83,7 +83,7 @@ function getCurrentMessage():GmailMessage {
         `export * from 'file'\n` +
         `export { foo, bar } from "file"`);
   },
-  tesMultilineImports: () => {
+  testMultilineImports: () => {
     printBeforeAndAfter(
 `// next statement will be ignored
 import ContentAlignment
@@ -167,13 +167,13 @@ writeToLog(\`\${words.join(' ')}\`);`);
   // ...
 }`);
   },
-  testExportImportWorkaraoundPart1: () => {
+  testExportImportWorkaroundPart1: () => {
     printBeforeAndAfter(
 `export const ICONS = {
   email: \`foo.png\`,
 };`);
   },
-  testExportImportWorkaraoundPart2: () => {
+  testExportImportWorkaroundPart2: () => {
     printBeforeAndAfter(
 `import { ICONS } from './package';
 
