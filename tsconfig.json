@@ -3,8 +3,11 @@
   "compilerOptions": {
     "declaration": true,
     "esModuleInterop": true,
-    "target": "ES2017",  // fully supported with node ^8.10.0 (cf. https://node.green/)
-    "lib": ["ESNext"],
+    "importHelpers": true, // canary: will cause runtime error if `tslib` is necessary
+    "target": "ES2017",
+    "lib": [
+      "ESNext"
+    ],
     "strict": true,
     "moduleResolution": "node",
     "module": "commonjs",
