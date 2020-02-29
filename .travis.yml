@@ -1,20 +1,20 @@
-sudo: required
+sudo: enabled
 os:
-- linux
-- osx
+  - linux
+ # - osx
 language: node_js
 node_js:
-- '12'
-- '10'
+  - "12"
+  - "10"
 cache:
   directories:
-  - "$HOME/.npm"
+    - "$HOME/.npm"
 before_install:
-- npm install -g npm@latest
+  - npm install -g npm@latest
 install:
-- npm i
+  - npm i
 before_script:
-- npm run build
+  - npm run build
 script:
-- npm run lint
-- npm run test
+  - npm run lint
+  - npm run test
