@@ -1,11 +1,11 @@
-import ts2gas from '../src/index';
+import ts2gas from '../src';
 
 /**
  * Prints the transpiled code before and after transpilation.
  * @param {string} code The TypeScript code.
  * @example printBeforeAndAfter('const hi:string = `Hi ${1 + 2}`;');
  */
-function printBeforeAndAfter(code: string) {
+function printBeforeAndAfter(code: string): void {
   console.log('v--TS--v');
   console.log(code);
   console.log('–––');
@@ -18,11 +18,12 @@ interface Tests {
 
 const tests: Tests = {
   testConst: () => {
+    // eslint-disable-next-line no-template-curly-in-string
     printBeforeAndAfter('const hi:string = `Hi ${1 + 2}`;');
   },
   testClass: () => {
     printBeforeAndAfter(
-`class Hamburger {
+      `class Hamburger {
   constructor() {
     // This is the constructor.
   }
@@ -34,34 +35,38 @@ const tests: Tests = {
   },
   testTemplateStrings: () => {
     printBeforeAndAfter(
-`var name = 'Grant';
+      `var name = 'Grant';
 var age = 42;
 console.log(\`Hello! My name is \${name}, and I am not \${age} years old.\`);
-`);
+`,
+    );
   },
   testArraySpread: () => {
     printBeforeAndAfter(
-`let cde = ['c', 'd', 'e'];
-let scale = ['a', 'b', ...cde, 'f', 'g'];`);
+      `let cde = ['c', 'd', 'e'];
+let scale = ['a', 'b', ...cde, 'f', 'g'];`,
+    );
   },
   testDestructuring: () => {
     printBeforeAndAfter(
-`let jane = { firstName: 'Jane', lastName: 'Doe'};
+      `let jane = { firstName: 'Jane', lastName: 'Doe'};
 let john = { firstName: 'John', lastName: 'Doe', middleName: 'Smith' }
 function sayName({firstName, lastName, middleName = 'N/A'}) {
   console.log(\`Hello \${firstName} \${middleName} \${lastName}\`)
 }
 sayName(jane) // -> Hello Jane N/A Doe
-sayName(john) // -> Hello John Smith Doe`);
+sayName(john) // -> Hello John Smith Doe`,
+    );
   },
   testImport: () => {
     printBeforeAndAfter(
-`import ContentAlignment = GoogleAppsScript.Slides.ContentAlignment;
+      `import ContentAlignment = GoogleAppsScript.Slides.ContentAlignment;
 import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;
 
 function getCurrentMessage():GmailMessage {
   return GmailApp.createDraft("", "", "").send();
-}`);
+}`,
+    );
   },
   testExport: () => {
     printBeforeAndAfter(`export const pi = 3.141592;`);
@@ -79,20 +84,19 @@ function getCurrentMessage():GmailMessage {
     printBeforeAndAfter(`const a = require('foo');`);
   },
   testExportFrom: () => {
-    printBeforeAndAfter(
-        `export * from 'file'\n` +
-        `export { foo, bar } from "file"`);
+    printBeforeAndAfter(`export * from 'file'\nexport { foo, bar } from "file"`);
   },
   testMultilineImports: () => {
     printBeforeAndAfter(
-`// next statement will be ignored
+      `// next statement will be ignored
 import ContentAlignment
 = GoogleAppsScript.Slides.ContentAlignment;
-// now resume with next statement`);
+// now resume with next statement`,
+    );
   },
   testMultilineExports: () => {
     printBeforeAndAfter(
-`// next statement will be ignored
+      `// next statement will be ignored
 export { foo, bar }
   from "file";
 // next statement will be preserved
@@ -111,11 +115,12 @@ export function foo() {}
 export default Client;
 export
   { ZipCodeValidator };
-// now resume with next statement`);
+// now resume with next statement`,
+    );
   },
   testImportFrom: () => {
     printBeforeAndAfter(
-`import Module from 'TypeScriptModule1';
+      `import Module from 'TypeScriptModule1';
 const module = new Module();
 import { SubModule } from "TypeScriptModule2";
 const subModule = new SubModule();
@@ -127,19 +132,21 @@ import {
   SubModule5
 } from "TypeScriptModule4";
 const subModule4 = new SubModule4();
-const subModule5 = new SubModule5();`);
-        },
+const subModule5 = new SubModule5();`,
+    );
+  },
   testNamespace: () => {
     printBeforeAndAfter(
-`namespace Pop {
+      `namespace Pop {
 export const goes = 'Goes';
 export function The(): void {}
 export class Wza {}
-}`);
+}`,
+    );
   },
   testThisKeyword: () => {
     printBeforeAndAfter(
-`// code in this test semantically incorrect
+      `// code in this test semantically incorrect
 getAllInstancesByUnits(): UnitMemberInstances {
   for (const row of data) {
     // following 'this' keyword should remain as is
@@ -149,33 +156,37 @@ getAllInstancesByUnits(): UnitMemberInstances {
       const u = this.toUnitInstance(e);
     });
   }
-}`);
+}`,
+    );
   },
   testHelloWorld: () => {
     printBeforeAndAfter(
-`const writeToLog = (message: string) => console.info(message);
+      `const writeToLog = (message: string) => console.info(message);
 
 let words = ['hello', 'world'];
-writeToLog(\`\${words.join(' ')}\`);`);
+writeToLog(\`\${words.join(' ')}\`);`,
+    );
   },
   testDefaultParams: () => {
     printBeforeAndAfter(
-`function JsonResponseHandler(url: string,
+      `function JsonResponseHandler(url: string,
     query = {},
     params = {muteHttpExceptions: true},
     cacheName: string, cacheTime = 3600) {
   // ...
-}`);
+}`,
+    );
   },
   testExportImportWorkaroundPart1: () => {
     printBeforeAndAfter(
-`export const ICONS = {
+      `export const ICONS = {
   email: \`foo.png\`,
-};`);
+};`,
+    );
   },
   testExportImportWorkaroundPart2: () => {
     printBeforeAndAfter(
-`import { ICONS } from './package';
+      `import { ICONS } from './package';
 
 type _i_ICONS = typeof ICONS;
 declare namespace exports {
@@ -183,22 +194,24 @@ declare namespace exports {
 }
 
 exports.ICONS.email;
-`);
+`,
+    );
   },
   testExportImportNamespaceWorkaround: () => {
     printBeforeAndAfter(
-`namespace Package {
+      `namespace Package {
   export function foo() {}
 }
 
 Package.foo();
 
 const nameIWantForMyImports = Package.foo;
-nameIWantForMyImports();`);
+nameIWantForMyImports();`,
+    );
   },
   testTypeScript_34x_highOrder: () => {
     printBeforeAndAfter(
-`// Higher order function type inference
+      `// Higher order function type inference
 declare function pipe<A extends any[], B, C>(ab: (...args: A) => B, bc: (b: B) => C): (...args: A) => C;
 
 declare function list<T>(a: T): T[];
@@ -215,11 +228,12 @@ const zip = <T, U>(x: T, y: U): [T, U] => [x, y];
 const flipped = flip(zip);  // <T, U>(b: U, a: T) => [T, U]
 
 const t1 = flipped(10, 'hello');  // [string, number]
-const t2 = flipped(true, 0);  // [number, boolean]`);
+const t2 = flipped(true, 0);  // [number, boolean]`,
+    );
   },
   testTypeScript_34x_improvedReadonly: () => {
     printBeforeAndAfter(
-`// Improved support for read-only arrays and tuples
+      `// Improved support for read-only arrays and tuples
 function f1(mt: [number, number], rt: readonly [number, number]) {
   mt[0] = 1;  // Ok
   // rt[0] = 1;  // Error, read-only element
@@ -247,34 +261,36 @@ type T0 = Readonly<string[]>;  // readonly string[]
 type T1 = Readonly<[number, number]>;  // readonly [number, number]
 type T2 = Partial<Readonly<string[]>>;  // readonly (string | undefined)[]
 type T3 = Readonly<Partial<string[]>>;  // readonly (string | undefined)[]
-type T4 = ReadWrite<Required<T3>>;  // string[]`);
+type T4 = ReadWrite<Required<T3>>;  // string[]`,
+    );
   },
   testTypeScript_34x_constContext: () => {
     printBeforeAndAfter(
-`// Const contexts for literal expressions
+      `// Const contexts for literal expressions
 let x = 10 as const;  // Type 10
 let y = <const> [10, 20];  // Type readonly [10, 20]
-let z = { text: "hello" } as const;  // Type { readonly text: "hello" }`);
+let z = { text: "hello" } as const;  // Type { readonly text: "hello" }`,
+    );
   },
   testTypeScript_34x_globalThis: () => {
     printBeforeAndAfter(
-`// \`globalThis\`
+      `// \`globalThis\`
 // Add globalThis
 // @Filename: one.ts
 var a = 1;
 var b = 2;
 // @Filename: two.js
 this.c = 3;
-const total = globalThis.a + this.b + window.c + this.unknown;`);
+const total = globalThis.a + this.b + window.c + this.unknown;`,
+    );
   },
 };
+
 // Run tests
 console.log('## TESTS ##');
-const testNames = Object.keys(tests);
 console.log('---------------------------------------------------------------------------------');
-for (const testName of testNames) {
+for (const testName of Object.keys(tests)) {
   console.log(`# ${testName}`);
-  const test = tests[testName];
-  test();
+  tests[testName]();
   console.log('---------------------------------------------------------------------------------');
 }
