@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "dryrun": "npm publish --dry-run",
-    "lint": "tslint --project tslint.json && echo 'No lint errors. All good!'",
+    "lint": "xo && echo 'No lint errors. All good!'",
     "test": "node tests/test.js"
   },
   "repository": {
@@ -27,11 +27,11 @@
   },
   "homepage": "https://github.com/grant/ts2gas#readme",
   "dependencies": {
-    "typescript": "^3.8.3"
+    "typescript": "^3.9.2"
   },
   "devDependencies": {
-    "@types/node": "^10.17.17",
-    "prettier": "^1.19.1",
-    "tslint": "^6.0.0"
+    "@types/node": "^10.17.21",
+    "prettier": "^2.0.4",
+    "xo": "^0.30.0"
   }
 }
