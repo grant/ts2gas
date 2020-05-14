@@ -39,7 +39,7 @@ import {
 
 const { get, ownKeys, set } = Reflect;
 
-// type guards helpers
+// Type guards helpers
 const { isArray } = Array;
 const isObject = (v: unknown): v is object => Object.prototype.toString.call(v) === '[object Object]';
 
@@ -51,12 +51,12 @@ const isObject = (v: unknown): v is object => Object.prototype.toString.call(v) 
  * @param {object} target The target object to mutate.
  * @param {object[]} sources one or more objects to assign.
  */
-const deepAssign = (target: object, ...sources: object[]): object => {
+const deepAssign = (target: object, ...sources: readonly object[]): object => {
   for (const source of sources) {
     const keys = ownKeys(source);
     for (const key of keys) {
       const targetValue = get(target, key);
-      if (source.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
         const value = get(source, key);
         if (isArray(value)) {
           set(target, key, isArray(targetValue) ? [...targetValue, ...value] : value);
@@ -73,6 +73,7 @@ const deepAssign = (target: object, ...sources: object[]): object => {
 };
 
 // Transformer types
+// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
 type NodeFilter = (node: Node) => boolean;
 type BeforeTransformerFactory = (filter: NodeFilter) => TransformerFactory<SourceFile>;
 type AfterTransformerFactory = (kind: SyntaxKind, filter: NodeFilter) => TransformerFactory<SourceFile>;
@@ -83,8 +84,8 @@ type AfterTransformerFactory = (kind: SyntaxKind, filter: NodeFilter) => Transfo
  * @param {TranspileOptions} transpileOptions custom transpile options.
  * @see https://github.com/Microsoft/TypeScript/wiki/Using-the-Compiler-API
  */
-const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
-  /** semaphore for emitting dummy `module.exports` */
+const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {}): string => {
+  /** Semaphore for emitting dummy `module.exports` */
   let addDummyModule = false;
 
   // Node filters
@@ -92,13 +93,14 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   /**
    * Filter any expression statement assigning to 'exports["default"]'
    */
-  const exportsDefaultNodeFilter: NodeFilter = (node) =>
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  const exportsDefaultNodeFilter: NodeFilter = (node: Node) =>
     isExpressionStatement(node) &&
-    isBinaryExpression(node.expression) && // is it a binary expression
+    isBinaryExpression(node.expression) && // Is it a binary expression
     isPropertyAccessExpression(node.expression.left) &&
-    isIdentifier(node.expression.left.expression) && // is it 'exports'
+    isIdentifier(node.expression.left.expression) && // Is it 'exports'
     idText(node.expression.left.expression) === 'exports' &&
-    isIdentifier(node.expression.left.name) && // is it 'default'
+    isIdentifier(node.expression.left.name) && // Is it 'default'
     idText(node.expression.left.name) === 'default' &&
     node.expression.operatorToken.kind === SyntaxKind.EqualsToken && // '='
     isIdentifier(node.expression.right);
@@ -106,10 +108,11 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   /**
    * Filter any added `exports.__esModule` expression statement
    */
-  const exportEsModuleNodeFilter: NodeFilter = (node) =>
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  const exportEsModuleNodeFilter: NodeFilter = (node: Node) =>
     isExpressionStatement(node) &&
     node.pos === -1 &&
-    node.end === -1 && // hint it was added by tranpiler
+    node.end === -1 && // Hint: it was added by the tranpiler
     isBinaryExpression(node.expression) &&
     isPropertyAccessExpression(node.expression.left) &&
     isIdentifier(node.expression.left.expression) &&
@@ -119,18 +122,22 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   /**
    * Filter any `export`...`from` declaration
    */
-  const exportFromNodeFilter: NodeFilter = (node) =>
-    isExportDeclaration(node) && !!node.getChildren().find((e) => e.kind === SyntaxKind.FromKeyword);
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  const exportFromNodeFilter: NodeFilter = (node: Node) =>
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+    isExportDeclaration(node) && Boolean(node.getChildren().find((node) => node.kind === SyntaxKind.FromKeyword));
 
   /**
    * Filter any import declaration
    */
-  const importNodeFilter: NodeFilter = (node) => isImportEqualsDeclaration(node) || isImportDeclaration(node);
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  const importNodeFilter: NodeFilter = (node: Node) => isImportEqualsDeclaration(node) || isImportDeclaration(node);
 
   /**
    * Filter any identifier
    */
-  const identifierFilter: NodeFilter = (node) => isIdentifier(node);
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  const identifierFilter: NodeFilter = (node: Node) => isIdentifier(node);
 
   // Transformers
 
@@ -138,7 +145,8 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    *  Create a commented-out statement
    * @param {Node} node The node to comment-out.
    */
-  const createCommentedStatement: Transformer<Node> = (node) => {
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  const createCommentedStatement: Transformer<Node> = (node: Node) => {
     const ignoredNode = createNotEmittedStatement(node);
     addSyntheticTrailingComment(ignoredNode, SyntaxKind.SingleLineCommentTrivia, node.getText().replace(/\n/g, '\\n'));
     return ignoredNode;
@@ -151,11 +159,14 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    * It use 'createCommentedStatement' to comment-out filtered node
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const ignoreNodeBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     const visitor: Visitor = (node) =>
       nodeFilter(node) ? createCommentedStatement(node) : visitEachChild(node, visitor, context);
 
-    return (sourceFile) => visitNode(sourceFile, visitor);
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+    return (sourceFile: SourceFile) => visitNode(sourceFile, visitor);
   };
 
   /**
@@ -163,19 +174,23 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    * It use applies the 'NoSubstitution' flag on every node
    * @param {NodeFilter} nodeFilter The node visitor used to transform (unused here).
    */
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const noSubstitutionBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     const visitor: Visitor = (node) => {
       if (
-        nodeFilter(node) && // node kind is Identifier
-        // do not process if parent kind is EnumDeclaration
+        nodeFilter(node) && // Node kind is Identifier
+        // Do not process if parent kind is EnumDeclaration
         !(node.parent && isEnumDeclaration(node.parent))
       ) {
         setEmitFlags(node, EmitFlags.NoSubstitution);
       }
+
       return visitEachChild(node, visitor, context);
     };
 
-    return (sourceFile) => visitNode(sourceFile, visitor);
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+    return (sourceFile: SourceFile) => visitNode(sourceFile, visitor);
   };
 
   // `after:` transformer factories
@@ -185,21 +200,25 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    * @param {SyntaxKind} kind the kind of node to filter.
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const ignoreNodeAfterBuilder: AfterTransformerFactory = (kind, nodeFilter) => (context) => {
     const previousOnSubstituteNode = context.onSubstituteNode;
 
     context.enableSubstitution(kind);
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     context.onSubstituteNode = (hint, node) => {
       node = previousOnSubstituteNode(hint, node);
       if (nodeFilter(node)) {
         /** Do not emit this node */
         // node = createEmptyStatement();
-        node = createNotEmittedStatement(node);
         // node = createCommentedStatement(node);
+        node = createNotEmittedStatement(node);
       }
+
       return node;
     };
 
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     return (sourceFile) => sourceFile;
   };
 
@@ -228,22 +247,27 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   // (Transpiled `exports["default"]`)
   const removeExportsDefault = ignoreNodeAfterBuilder(SyntaxKind.ExpressionStatement, exportsDefaultNodeFilter);
 
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const detectExportNodes: TransformerFactory<SourceFile> = (context) => (sourceFile) => {
+    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     const visitor: Visitor = (node) => {
       if (addDummyModule) {
-        // no need to look further
+        // No need to look further
         return node;
       }
+
       if (isIdentifier(node) && idText(node) === 'exports') {
         addDummyModule = true;
       }
+
       return visitEachChild(node, visitor, context);
     };
 
     return visitNode(sourceFile, visitor);
   };
 
-  const addDummyModuleNodes: TransformerFactory<SourceFile> = () => (sourceFile) =>
+  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
+  const addDummyModuleNodes: TransformerFactory<SourceFile> = () => (sourceFile: SourceFile) =>
     addDummyModule
       ? updateSourceFileNode(sourceFile, [
           createVariableStatement(
@@ -295,10 +319,11 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
       experimentalDecorators: true,
       noImplicitUseStrict: true,
       target: ScriptTarget.ES3,
+      /* Other defaults */
       // removeComments: true,
       // pretty: true,
     },
-    // the following property is to document this little known feature
+    // The following property is to document this little known feature
     // renamedDependencies: { SomeName: 'SomeOtherName' },
   };
 
@@ -312,7 +337,7 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
    */
   const statics: TranspileOptions = {
     compilerOptions: {
-      emitDeclarationOnly: false, // transpileModule() will crash if set to true
+      emitDeclarationOnly: false, // TranspileModule() will crash if set to true
       module: ModuleKind.None,
     },
     transformers: {
@@ -321,7 +346,7 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
     },
   };
 
-  // keep only override-able properties
+  // Keep only override-able properties
   if (typeof transpileOptions === 'object') {
     const { compilerOptions, renamedDependencies } = transpileOptions;
     transpileOptions = { compilerOptions, renamedDependencies };
@@ -329,12 +354,12 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
     transpileOptions = {};
   }
 
-  // merge properties in order for proper override
+  // Merge properties in order for proper override
   transpileOptions = deepAssign(
-    {}, // safe to mutate
-    defaults, // default (override-able)
-    transpileOptions, // user override
-    statics, // statics
+    {},
+    defaults, // Default (override-able)
+    transpileOptions, // User override
+    statics, // Always apply
   );
 
   // Transpile (cf. https://www.typescriptlang.org/docs/handbook/compiler-options.html)
@@ -346,7 +371,7 @@ const ts2gas = (source: string, transpileOptions: TranspileOptions = {}) => {
   // ## Exports
   // Exports are transpiled to variables 'exports' and 'module.exports'
 
-  const packageJson = require('../package.json'); // ugly hack
+  const packageJson = require('../package.json') as { name: string; version: string }; // Ugly hack
 
   // Include an exports object in all files.
   output = `// Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})

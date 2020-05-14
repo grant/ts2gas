@@ -1,0 +1,5 @@
+{
+  "ignores": [".js"],
+  "space": 2,
+  "prettier": true
+}
