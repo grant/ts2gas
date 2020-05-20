@@ -61,8 +61,7 @@ typings
 .next
 
 *.js
+*.js.map
 *.d.ts
 *.DS_Store
 *.lock
-
-!.eslintrc.js
