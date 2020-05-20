@@ -1,19 +1,19 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    "declaration": true,
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "importHelpers": true, // canary: will cause runtime error if `tslib` is necessary
     "target": "ES2017",
-    "lib": [
-      "ESNext"
-    ],
+    "lib": ["ESNext"],
     "strict": true,
+    "sourceMap": true,
     "moduleResolution": "node",
     "module": "commonjs",
+    "declaration": true,
+    "importHelpers": true // canary: will cause runtime error if `tslib` is necessary
   },
   "files": [
     "src/index.ts",
-    "tests/test.ts",
+    "tests/test.ts"
   ]
 }
