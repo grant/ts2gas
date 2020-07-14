@@ -41,17 +41,17 @@ const { get, ownKeys, set } = Reflect;
 
 // Type guards helpers
 const { isArray } = Array;
-const isObject = (v: unknown): v is object => Object.prototype.toString.call(v) === '[object Object]';
+const isObject = (v: unknown): v is Record<string, unknown> => Object.prototype.toString.call(v) === '[object Object]';
 
 /**
  * A 'good enough' recursive Object.assign like function
  * Properties from sources are add or overwritten on target.
  * If the value is a object, then recursion is applied
  * If the value is an array, then concatenation occurs
- * @param {object} target The target object to mutate.
- * @param {object[]} sources one or more objects to assign.
+ * @param {Record<string, unknown>} target The target object to mutate.
+ * @param {Array<Record<string, unknown>>} sources one or more objects to assign.
  */
-const deepAssign = (target: object, ...sources: readonly object[]): object => {
+const deepAssign = (target: TranspileOptions, ...sources: Readonly<TranspileOptions[]>): TranspileOptions => {
   for (const source of sources) {
     const keys = ownKeys(source);
     for (const key of keys) {
@@ -73,7 +73,6 @@ const deepAssign = (target: object, ...sources: readonly object[]): object => {
 };
 
 // Transformer types
-// eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
 type NodeFilter = (node: Node) => boolean;
 type BeforeTransformerFactory = (filter: NodeFilter) => TransformerFactory<SourceFile>;
 type AfterTransformerFactory = (kind: SyntaxKind, filter: NodeFilter) => TransformerFactory<SourceFile>;
@@ -93,7 +92,6 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
   /**
    * Filter any expression statement assigning to 'exports["default"]'
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const exportsDefaultNodeFilter: NodeFilter = (node: Node) =>
     isExpressionStatement(node) &&
     isBinaryExpression(node.expression) && // Is it a binary expression
@@ -108,7 +106,6 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
   /**
    * Filter any added `exports.__esModule` expression statement
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const exportEsModuleNodeFilter: NodeFilter = (node: Node) =>
     isExpressionStatement(node) &&
     node.pos === -1 &&
@@ -122,21 +119,17 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
   /**
    * Filter any `export`...`from` declaration
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const exportFromNodeFilter: NodeFilter = (node: Node) =>
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     isExportDeclaration(node) && Boolean(node.getChildren().find((node) => node.kind === SyntaxKind.FromKeyword));
 
   /**
    * Filter any import declaration
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const importNodeFilter: NodeFilter = (node: Node) => isImportEqualsDeclaration(node) || isImportDeclaration(node);
 
   /**
    * Filter any identifier
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const identifierFilter: NodeFilter = (node: Node) => isIdentifier(node);
 
   // Transformers
@@ -145,7 +138,6 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    *  Create a commented-out statement
    * @param {Node} node The node to comment-out.
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const createCommentedStatement: Transformer<Node> = (node: Node) => {
     const ignoredNode = createNotEmittedStatement(node);
     addSyntheticTrailingComment(ignoredNode, SyntaxKind.SingleLineCommentTrivia, node.getText().replace(/\n/g, '\\n'));
@@ -159,13 +151,10 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * It use 'createCommentedStatement' to comment-out filtered node
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const ignoreNodeBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     const visitor: Visitor = (node) =>
       nodeFilter(node) ? createCommentedStatement(node) : visitEachChild(node, visitor, context);
 
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     return (sourceFile: SourceFile) => visitNode(sourceFile, visitor);
   };
 
@@ -174,9 +163,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * It use applies the 'NoSubstitution' flag on every node
    * @param {NodeFilter} nodeFilter The node visitor used to transform (unused here).
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const noSubstitutionBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     const visitor: Visitor = (node) => {
       if (
         nodeFilter(node) && // Node kind is Identifier
@@ -189,7 +176,6 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
       return visitEachChild(node, visitor, context);
     };
 
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     return (sourceFile: SourceFile) => visitNode(sourceFile, visitor);
   };
 
@@ -200,12 +186,10 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * @param {SyntaxKind} kind the kind of node to filter.
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const ignoreNodeAfterBuilder: AfterTransformerFactory = (kind, nodeFilter) => (context) => {
     const previousOnSubstituteNode = context.onSubstituteNode;
 
     context.enableSubstitution(kind);
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     context.onSubstituteNode = (hint, node) => {
       node = previousOnSubstituteNode(hint, node);
       if (nodeFilter(node)) {
@@ -218,7 +202,6 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
       return node;
     };
 
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     return (sourceFile) => sourceFile;
   };
 
@@ -247,9 +230,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
   // (Transpiled `exports["default"]`)
   const removeExportsDefault = ignoreNodeAfterBuilder(SyntaxKind.ExpressionStatement, exportsDefaultNodeFilter);
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const detectExportNodes: TransformerFactory<SourceFile> = (context) => (sourceFile) => {
-    // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
     const visitor: Visitor = (node) => {
       if (addDummyModule) {
         // No need to look further
@@ -266,7 +247,6 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
     return visitNode(sourceFile, visitor);
   };
 
-  // eslint-disable-next-line @typescript-eslint/prefer-readonly-parameter-types
   const addDummyModuleNodes: TransformerFactory<SourceFile> = () => (sourceFile: SourceFile) =>
     addDummyModule
       ? updateSourceFileNode(sourceFile, [
@@ -371,6 +351,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
   // ## Exports
   // Exports are transpiled to variables 'exports' and 'module.exports'
 
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const packageJson = require('../package.json') as { name: string; version: string }; // Ugly hack
 
   // Include an exports object in all files.
