@@ -27,11 +27,11 @@
   },
   "homepage": "https://github.com/grant/ts2gas#readme",
   "dependencies": {
-    "typescript": "^3.9.3"
+    "typescript": "^3.9.6"
   },
   "devDependencies": {
-    "@types/node": "^10.17.24",
+    "@types/node": "^10.17.27",
     "prettier": "^2.0.4",
-    "xo": "^0.30.0"
+    "xo": "^0.32.1"
   }
 }
