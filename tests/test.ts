@@ -8,13 +8,11 @@ import ts2gas from '../src';
 function printBeforeAndAfter(code: string): void {
   console.log('v--TS--v');
   console.log(code);
-  console.log('–––');
+  console.log('---');
   console.log(`${ts2gas(code)}^--GS--^`); // Prevents newline
 }
 
-interface Tests {
-  [keys: string]: () => void;
-}
+type Tests = Record<string, () => void>;
 
 const tests: Tests = {
   testConst: () => {
