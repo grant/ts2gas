@@ -1,6 +1,6 @@
 {
   "name": "ts2gas",
-  "version": "3.6.4",
+  "version": "3.6.5",
   "description": "A function that transpiles TypeScript to Google Apps Script.",
   "files": [
     "src"
