@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/extensions
 import ts2gas from '../src';
 
 /**

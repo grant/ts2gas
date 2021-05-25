@@ -120,7 +120,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * Filter any `export`...`from` declaration
    */
   const exportFromNodeFilter: NodeFilter = (node: Node) =>
-    isExportDeclaration(node) && Boolean(node.getChildren().find((node) => node.kind === SyntaxKind.FromKeyword));
+    isExportDeclaration(node) && node.getChildren().some((node) => node.kind === SyntaxKind.FromKeyword);
 
   /**
    * Filter any import declaration
