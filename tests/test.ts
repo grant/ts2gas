@@ -1,4 +1,4 @@
-import ts2gas from '../src';
+import ts2gas from '../src/index.js';
 
 /**
  * Prints the transpiled code before and after transpilation.
