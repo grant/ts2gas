@@ -3,10 +3,9 @@ os:
   - linux
  # - osx
 language: node_js
-node_js:
+  - "16"
   - "14"
   - "12"
-  - "10"
 cache:
   directories:
     - "$HOME/.npm"
