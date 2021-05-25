@@ -1,4 +1,17 @@
-import {
+import fs from 'fs';
+import typescript from 'typescript';
+import type { PackageJson } from 'type-fest';
+import type {
+  Node,
+  SourceFile,
+  SyntaxKind,
+  Transformer,
+  TransformerFactory,
+  TranspileOptions,
+  Visitor,
+} from 'typescript';
+
+const {
   addSyntheticTrailingComment,
   createBinary,
   createIdentifier,
@@ -20,27 +33,18 @@ import {
   isImportEqualsDeclaration,
   isPropertyAccessExpression,
   ModuleKind,
-  Node,
   NodeFlags,
   ScriptTarget,
   setEmitFlags,
-  SourceFile,
-  SyntaxKind,
-  Transformer,
-  TransformerFactory,
+  SyntaxKind: tsSyntaxKind,
   transpileModule,
-  TranspileOptions,
   updateSourceFileNode,
   version,
   visitEachChild,
   visitNode,
-  Visitor,
-} from 'typescript';
-
-const { get, ownKeys, set } = Reflect;
+} = typescript;
 
 // Type guards helpers
-const { isArray } = Array;
 const isObject = (v: unknown): v is Record<string, unknown> => Object.prototype.toString.call(v) === '[object Object]';
 
 /**
@@ -53,17 +57,17 @@ const isObject = (v: unknown): v is Record<string, unknown> => Object.prototype.
  */
 const deepAssign = (target: TranspileOptions, ...sources: Readonly<TranspileOptions[]>): TranspileOptions => {
   for (const source of sources) {
-    const keys = ownKeys(source);
+    const keys = Reflect.ownKeys(source);
     for (const key of keys) {
-      const targetValue = get(target, key);
+      const targetValue = Reflect.get(target, key);
       if (Object.prototype.hasOwnProperty.call(source, key)) {
-        const value = get(source, key);
-        if (isArray(value)) {
-          set(target, key, isArray(targetValue) ? [...targetValue, ...value] : value);
+        const value = Reflect.get(source, key);
+        if (Array.isArray(value)) {
+          Reflect.set(target, key, Array.isArray(targetValue) ? [...targetValue, ...value] : value);
         } else if (isObject(value)) {
-          set(target, key, deepAssign(isObject(targetValue) ? targetValue : {}, value));
+          Reflect.set(target, key, deepAssign(isObject(targetValue) ? targetValue : {}, value));
         } else if (typeof value !== 'undefined') {
-          set(target, key, value);
+          Reflect.set(target, key, value);
         }
       }
     }
@@ -71,6 +75,8 @@ const deepAssign = (target: TranspileOptions, ...sources: Readonly<TranspileOpti
 
   return target;
 };
+
+const packageJson: PackageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
 
 // Transformer types
 type NodeFilter = (node: Node) => boolean;
@@ -100,7 +106,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
     idText(node.expression.left.expression) === 'exports' &&
     isIdentifier(node.expression.left.name) && // Is it 'default'
     idText(node.expression.left.name) === 'default' &&
-    node.expression.operatorToken.kind === SyntaxKind.EqualsToken && // '='
+    node.expression.operatorToken.kind === tsSyntaxKind.EqualsToken && // '='
     isIdentifier(node.expression.right);
 
   /**
@@ -120,7 +126,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * Filter any `export`...`from` declaration
    */
   const exportFromNodeFilter: NodeFilter = (node: Node) =>
-    isExportDeclaration(node) && node.getChildren().some((node) => node.kind === SyntaxKind.FromKeyword);
+    isExportDeclaration(node) && node.getChildren().some((node) => node.kind === tsSyntaxKind.FromKeyword);
 
   /**
    * Filter any import declaration
@@ -140,7 +146,11 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    */
   const createCommentedStatement: Transformer<Node> = (node: Node) => {
     const ignoredNode = createNotEmittedStatement(node);
-    addSyntheticTrailingComment(ignoredNode, SyntaxKind.SingleLineCommentTrivia, node.getText().replace(/\n/g, '\\n'));
+    addSyntheticTrailingComment(
+      ignoredNode,
+      tsSyntaxKind.SingleLineCommentTrivia,
+      node.getText().replace(/\n/g, '\\n'),
+    );
     return ignoredNode;
   };
 
@@ -224,11 +234,11 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
   // ## exports.__esModule
   // Remove all lines that have exports.__esModule = true
   // @see https://github.com/Microsoft/TypeScript/issues/14351
-  const removeExportEsModule = ignoreNodeAfterBuilder(SyntaxKind.ExpressionStatement, exportEsModuleNodeFilter);
+  const removeExportEsModule = ignoreNodeAfterBuilder(tsSyntaxKind.ExpressionStatement, exportEsModuleNodeFilter);
 
   // Remove default exports
   // (Transpiled `exports["default"]`)
-  const removeExportsDefault = ignoreNodeAfterBuilder(SyntaxKind.ExpressionStatement, exportsDefaultNodeFilter);
+  const removeExportsDefault = ignoreNodeAfterBuilder(tsSyntaxKind.ExpressionStatement, exportsDefaultNodeFilter);
 
   const detectExportNodes: TransformerFactory<SourceFile> = (context) => (sourceFile) => {
     const visitor: Visitor = (node) => {
@@ -259,7 +269,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
                   undefined,
                   createBinary(
                     createIdentifier('exports'),
-                    createToken(SyntaxKind.BarBarToken),
+                    createToken(tsSyntaxKind.BarBarToken),
                     createObjectLiteral([], false),
                   ),
                 ),
@@ -276,7 +286,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
                   undefined,
                   createBinary(
                     createIdentifier('module'),
-                    createToken(SyntaxKind.BarBarToken),
+                    createToken(tsSyntaxKind.BarBarToken),
                     createObjectLiteral(
                       [createPropertyAssignment(createIdentifier('exports'), createIdentifier('exports'))],
                       false,
@@ -351,14 +361,12 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
   // ## Exports
   // Exports are transpiled to variables 'exports' and 'module.exports'
 
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const packageJson = require('../package.json') as { name: string; version: string }; // Ugly hack
-
   // Include an exports object in all files.
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   output = `// Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
 ${output}`;
 
   return output;
 };
 
-export = ts2gas;
+export default ts2gas;
