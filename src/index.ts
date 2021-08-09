@@ -13,16 +13,19 @@ import type {
 
 const {
   addSyntheticTrailingComment,
-  createBinary,
-  createIdentifier,
-  createNotEmittedStatement,
-  createObjectLiteral,
-  createPropertyAssignment,
-  createToken,
-  createVariableDeclaration,
-  createVariableDeclarationList,
-  createVariableStatement,
   EmitFlags,
+  factory: {
+    createBinaryExpression,
+    createIdentifier,
+    createNotEmittedStatement,
+    createObjectLiteralExpression,
+    createPropertyAssignment,
+    createToken,
+    createVariableDeclaration,
+    createVariableDeclarationList,
+    createVariableStatement,
+    updateSourceFile,
+  },
   idText,
   isBinaryExpression,
   isEnumDeclaration,
@@ -38,7 +41,6 @@ const {
   setEmitFlags,
   SyntaxKind: tsSyntaxKind,
   transpileModule,
-  updateSourceFileNode,
   version,
   visitEachChild,
   visitNode,
@@ -59,11 +61,15 @@ const deepAssign = (target: TranspileOptions, ...sources: Readonly<TranspileOpti
   for (const source of sources) {
     const keys = Reflect.ownKeys(source);
     for (const key of keys) {
-      const targetValue = Reflect.get(target, key);
+      const targetValue = Reflect.get(target, key) as unknown;
       if (Object.prototype.hasOwnProperty.call(source, key)) {
-        const value = Reflect.get(source, key);
+        const value = Reflect.get(source, key) as unknown;
         if (Array.isArray(value)) {
-          Reflect.set(target, key, Array.isArray(targetValue) ? [...targetValue, ...value] : value);
+          Reflect.set(
+            target,
+            key,
+            Array.isArray(targetValue) ? [...(targetValue as unknown[]), ...(value as unknown[])] : value,
+          );
         } else if (isObject(value)) {
           Reflect.set(target, key, deepAssign(isObject(targetValue) ? targetValue : {}, value));
         } else if (typeof value !== 'undefined') {
@@ -76,7 +82,7 @@ const deepAssign = (target: TranspileOptions, ...sources: Readonly<TranspileOpti
   return target;
 };
 
-const packageJson: PackageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8')) as PackageJson;
 
 // Transformer types
 type NodeFilter = (node: Node) => boolean;
@@ -259,7 +265,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
 
   const addDummyModuleNodes: TransformerFactory<SourceFile> = () => (sourceFile: SourceFile) =>
     addDummyModule
-      ? updateSourceFileNode(sourceFile, [
+      ? updateSourceFile(sourceFile, [
           createVariableStatement(
             undefined,
             createVariableDeclarationList(
@@ -267,10 +273,11 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
                 createVariableDeclaration(
                   createIdentifier('exports'),
                   undefined,
-                  createBinary(
+                  undefined,
+                  createBinaryExpression(
                     createIdentifier('exports'),
                     createToken(tsSyntaxKind.BarBarToken),
-                    createObjectLiteral([], false),
+                    createObjectLiteralExpression([], false),
                   ),
                 ),
               ],
@@ -284,10 +291,11 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
                 createVariableDeclaration(
                   createIdentifier('module'),
                   undefined,
-                  createBinary(
+                  undefined,
+                  createBinaryExpression(
                     createIdentifier('module'),
                     createToken(tsSyntaxKind.BarBarToken),
-                    createObjectLiteral(
+                    createObjectLiteralExpression(
                       [createPropertyAssignment(createIdentifier('exports'), createIdentifier('exports'))],
                       false,
                     ),
