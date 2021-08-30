@@ -29,8 +29,8 @@
     "test": "npm run lint && node tests/test.js"
   },
   "dependencies": {
-    "type-fest": "^2.0.0",
-    "typescript": "^4.3.5"
+    "type-fest": "^2.1.0",
+    "typescript": "^4.4.2"
   },
   "devDependencies": {
     "prettier": "^2.3.2",
