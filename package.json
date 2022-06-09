@@ -7,7 +7,7 @@
     "src"
   ],
   "exports": "./src/index.js",
-  "main": "src/index.js",
+  "main": "src/ts2gas.cjs",
   "types": "src/index.d.ts",
   "engines": {
     "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
