@@ -1,6 +1,6 @@
 # ts2gas
 
-<a href="https://www.npmjs.com/package/ts2gas"><img src="https://img.shields.io/npm/v/ts2gas.svg" alt="npm Version"></a><a href="https://travis-ci.org/grant/ts2gas"><img src="https://travis-ci.org/grant/ts2gas.svg?branch=master" alt="Build Status"></a>
+[![Unit CI][unit_img]][unit_link] [![Lint CI][lint_img]][lint_link]
 
 A function that transpiles TypeScript to Google Apps Script.
 
@@ -31,7 +31,7 @@ writeToLog("" + words.join(' '));
 ## Install
 
 ```shell
-yarn add ts2gas
+npm i ts2gas
 ```
 
 ## Usage
@@ -154,3 +154,8 @@ class Test {
 let t = new Test();
 console.log(t.name);  // 'test'
 ```
+
+[unit_img]: https://github.com/GoogleCloudPlatform/functions-framework-nodejs/workflows/Unit%20CI/badge.svg
+[unit_link]:  https://github.com/GoogleCloudPlatform/functions-framework-nodejs/actions?query=workflow%3A"Unit+CI"
+[lint_img]: https://github.com/GoogleCloudPlatform/functions-framework-nodejs/workflows/Lint%20CI/badge.svg
+[lint_link]:  https://github.com/GoogleCloudPlatform/functions-framework-nodejs/actions?query=workflow%3A"Lint+CI"

@@ -26,13 +26,14 @@
     "build": "tsc --project tsconfig.json",
     "dryrun": "npm publish --dry-run",
     "lint": "xo && echo 'No lint errors. All good!'",
-    "test": "npm run lint && node tests/test.js"
+    "test": "node tests/test.js"
   },
   "dependencies": {
     "type-fest": "^2.1.0",
     "typescript": "^4.4.2"
   },
   "devDependencies": {
+    "@types/node": "^18.0.0",
     "prettier": "^2.3.2",
     "xo": "^0.44.0"
   },
