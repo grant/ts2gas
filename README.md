@@ -155,7 +155,7 @@ let t = new Test();
 console.log(t.name);  // 'test'
 ```
 
-[unit_img]: https://github.com/GoogleCloudPlatform/functions-framework-nodejs/workflows/Unit%20CI/badge.svg
-[unit_link]:  https://github.com/GoogleCloudPlatform/functions-framework-nodejs/actions?query=workflow%3A"Unit+CI"
-[lint_img]: https://github.com/GoogleCloudPlatform/functions-framework-nodejs/workflows/Lint%20CI/badge.svg
-[lint_link]:  https://github.com/GoogleCloudPlatform/functions-framework-nodejs/actions?query=workflow%3A"Lint+CI"
+[unit_img]: https://github.com/grant/ts2gas/actions/workflows/unit.yml/badge.svg
+[unit_link]:  https://github.com/grant/ts2gas/actions?query=workflow%3A"Unit+CI"
+[lint_img]: https://github.com/grant/ts2gas/workflows/Lint%20CI/badge.svg
+[lint_link]:  https://github.com/grant/ts2gas/actions?query=workflow%3A"Lint+CI"
