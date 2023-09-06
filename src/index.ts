@@ -167,7 +167,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * It use 'createCommentedStatement' to comment-out filtered node
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
-  const ignoreNodeBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
+  const ignoreNodeBeforeBuilder: BeforeTransformerFactory = (nodeFilter: NodeFilter) => (context) => {
     const visitor: Visitor = (node) =>
       nodeFilter(node) ? createCommentedStatement(node) : visitEachChild(node, visitor, context);
 
@@ -179,7 +179,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * It use applies the 'NoSubstitution' flag on every node
    * @param {NodeFilter} nodeFilter The node visitor used to transform (unused here).
    */
-  const noSubstitutionBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
+  const noSubstitutionBeforeBuilder: BeforeTransformerFactory = (nodeFilter: NodeFilter) => (context) => {
     const visitor: Visitor = (node) => {
       if (
         nodeFilter(node) && // Node kind is Identifier
@@ -202,7 +202,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * @param {SyntaxKind} kind the kind of node to filter.
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
-  const ignoreNodeAfterBuilder: AfterTransformerFactory = (kind, nodeFilter) => (context) => {
+  const ignoreNodeAfterBuilder: AfterTransformerFactory = (kind: SyntaxKind, nodeFilter: NodeFilter) => (context) => {
     const previousOnSubstituteNode = context.onSubstituteNode;
 
     context.enableSubstitution(kind);
