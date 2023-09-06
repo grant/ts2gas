@@ -65,3 +65,5 @@ typings
 *.d.ts
 *.DS_Store
 *.lock
+
+dist/
