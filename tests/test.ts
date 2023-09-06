@@ -458,138 +458,140 @@ describe('ts2gas', () => {
     expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
   });
 
-  test('TypeScript 34x highOrder', () => {
-    const typescript = `
-          // Higher order function type inference
-      declare function pipe<A extends any[], B, C>(ab: (...args: A) => B, bc: (b: B) => C): (...args: A) => C;
+  describe('TypeScript 3.4.x', () => {
+    test('High Order', () => {
+      const typescript = `
+            // Higher order function type inference
+        declare function pipe<A extends any[], B, C>(ab: (...args: A) => B, bc: (b: B) => C): (...args: A) => C;
 
-      declare function list<T>(a: T): T[];
-      declare function box<V>(x: V): { value: V };
+        declare function list<T>(a: T): T[];
+        declare function box<V>(x: V): { value: V };
 
-      const listBox = pipe(list, box);  // <T>(a: T) => { value: T[] }
-      const boxList = pipe(box, list);  // <V>(x: V) => { value: V }[]
+        const listBox = pipe(list, box);  // <T>(a: T) => { value: T[] }
+        const boxList = pipe(box, list);  // <V>(x: V) => { value: V }[]
 
-      const x1 = listBox(42);  // { value: number[] }
-      const x2 = boxList('hello');  // { value: string }[]
+        const x1 = listBox(42);  // { value: number[] }
+        const x2 = boxList('hello');  // { value: string }[]
 
-      const flip = <A, B, C>(f: (a: A, b: B) => C) => (b: B, a: A) => f(a, b);
-      const zip = <T, U>(x: T, y: U): [T, U] => [x, y];
-      const flipped = flip(zip);  // <T, U>(b: U, a: T) => [T, U]
+        const flip = <A, B, C>(f: (a: A, b: B) => C) => (b: B, a: A) => f(a, b);
+        const zip = <T, U>(x: T, y: U): [T, U] => [x, y];
+        const flipped = flip(zip);  // <T, U>(b: U, a: T) => [T, U]
 
-      const t1 = flipped(10, 'hello');  // [string, number]
-      const t2 = flipped(true, 0);  // [number, boolean]
-      `;
-    const gas = `
-      // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
-      var listBox = pipe(list, box); // <T>(a: T) => { value: T[] }
-      var boxList = pipe(box, list); // <V>(x: V) => { value: V }[]
-      var x1 = listBox(42); // { value: number[] }
-      var x2 = boxList('hello'); // { value: string }[]
-      var flip = function (f) { return function (b, a) { return f(a, b); }; };
-      var zip = function (x, y) { return [x, y]; };
-      var flipped = flip(zip); // <T, U>(b: U, a: T) => [T, U]
-      var t1 = flipped(10, 'hello'); // [string, number]
-      var t2 = flipped(true, 0); // [number, boolean]
-      `;
-    expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
-  });
+        const t1 = flipped(10, 'hello');  // [string, number]
+        const t2 = flipped(true, 0);  // [number, boolean]
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var listBox = pipe(list, box); // <T>(a: T) => { value: T[] }
+        var boxList = pipe(box, list); // <V>(x: V) => { value: V }[]
+        var x1 = listBox(42); // { value: number[] }
+        var x2 = boxList('hello'); // { value: string }[]
+        var flip = function (f) { return function (b, a) { return f(a, b); }; };
+        var zip = function (x, y) { return [x, y]; };
+        var flipped = flip(zip); // <T, U>(b: U, a: T) => [T, U]
+        var t1 = flipped(10, 'hello'); // [string, number]
+        var t2 = flipped(true, 0); // [number, boolean]
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
 
-  test('TypeScript 34x improvedReadonly', () => {
-    const typescript = `
-      // Improved support for read-only arrays and tuples
-      function f1(mt: [number, number], rt: readonly [number, number]) {
-        mt[0] = 1;  // Ok
-        // rt[0] = 1;  // Error, read-only element
-      }
-
-      // next function declaration crashes with Typescript version < 3.4.4
-      function f2(ma: string[], ra: readonly string[], mt: [string, string], rt: readonly [string, string]) {
-        //   ma = ra;  // Error
-        ma = mt;  // Ok
-        //   ma = rt;  // Error
-        ra = ma;  // Ok
-        ra = mt;  // Ok
-        ra = rt;  // Ok
-        //   mt = ma;  // Error
-        //   mt = ra;  // Error
-        //   mt = rt;  // Error
-        //   rt = ma;  // Error
-        //   rt = ra;  // Error
-        rt = mt;  // Ok
-      }
-
-      type ReadWrite<T> = { -readonly [P in keyof T] : T[P] };
-
-      type T0 = Readonly<string[]>;  // readonly string[]
-      type T1 = Readonly<[number, number]>;  // readonly [number, number]
-      type T2 = Partial<Readonly<string[]>>;  // readonly (string | undefined)[]
-      type T3 = Readonly<Partial<string[]>>;  // readonly (string | undefined)[]
-      type T4 = ReadWrite<Required<T3>>;  // string[]
-      `;
-    const gas = `
-      // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
-      // Improved support for read-only arrays and tuples
-      function f1(mt, rt) {
-          mt[0] = 1; // Ok
+    test('Improved Readonly', () => {
+      const typescript = `
+        // Improved support for read-only arrays and tuples
+        function f1(mt: [number, number], rt: readonly [number, number]) {
+          mt[0] = 1;  // Ok
           // rt[0] = 1;  // Error, read-only element
-      }
-      // next function declaration crashes with Typescript version < 3.4.4
-      function f2(ma, ra, mt, rt) {
+        }
+
+        // next function declaration crashes with Typescript version < 3.4.4
+        function f2(ma: string[], ra: readonly string[], mt: [string, string], rt: readonly [string, string]) {
           //   ma = ra;  // Error
-          ma = mt; // Ok
+          ma = mt;  // Ok
           //   ma = rt;  // Error
-          ra = ma; // Ok
-          ra = mt; // Ok
-          ra = rt; // Ok
+          ra = ma;  // Ok
+          ra = mt;  // Ok
+          ra = rt;  // Ok
           //   mt = ma;  // Error
           //   mt = ra;  // Error
           //   mt = rt;  // Error
           //   rt = ma;  // Error
           //   rt = ra;  // Error
-          rt = mt; // Ok
-      }
-      `;
-    expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
-  });
+          rt = mt;  // Ok
+        }
 
-  test('TypeScript 34x constContext', () => {
-    const typescript = `
-      // Const contexts for literal expressions
-      let x = 10 as const;  // Type 10
-      let y = <const> [10, 20];  // Type readonly [10, 20]
-      let z = { text: "hello" } as const;  // Type { readonly text: "hello" }`;
-    const gas = `
-      // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
-      // Const contexts for literal expressions
-      var x = 10; // Type 10
-      var y = [10, 20]; // Type readonly [10, 20]
-      var z = { text: "hello" }; // Type { readonly text: "hello" }
-      `;
-    expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
-  });
+        type ReadWrite<T> = { -readonly [P in keyof T] : T[P] };
 
-  test('TypeScript 34x globalThis', () => {
-    const typescript = `
+        type T0 = Readonly<string[]>;  // readonly string[]
+        type T1 = Readonly<[number, number]>;  // readonly [number, number]
+        type T2 = Partial<Readonly<string[]>>;  // readonly (string | undefined)[]
+        type T3 = Readonly<Partial<string[]>>;  // readonly (string | undefined)[]
+        type T4 = ReadWrite<Required<T3>>;  // string[]
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        // Improved support for read-only arrays and tuples
+        function f1(mt, rt) {
+            mt[0] = 1; // Ok
+            // rt[0] = 1;  // Error, read-only element
+        }
+        // next function declaration crashes with Typescript version < 3.4.4
+        function f2(ma, ra, mt, rt) {
+            //   ma = ra;  // Error
+            ma = mt; // Ok
+            //   ma = rt;  // Error
+            ra = ma; // Ok
+            ra = mt; // Ok
+            ra = rt; // Ok
+            //   mt = ma;  // Error
+            //   mt = ra;  // Error
+            //   mt = rt;  // Error
+            //   rt = ma;  // Error
+            //   rt = ra;  // Error
+            rt = mt; // Ok
+        }
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Const Context', () => {
+      const typescript = `
+        // Const contexts for literal expressions
+        let x = 10 as const;  // Type 10
+        let y = <const> [10, 20];  // Type readonly [10, 20]
+        let z = { text: "hello" } as const;  // Type { readonly text: "hello" }`;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        // Const contexts for literal expressions
+        var x = 10; // Type 10
+        var y = [10, 20]; // Type readonly [10, 20]
+        var z = { text: "hello" }; // Type { readonly text: "hello" }
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Global This', () => {
+      const typescript = `
+          // \`globalThis\`
+        // Add globalThis
+        // @Filename: one.ts
+        var a = 1;
+        var b = 2;
+        // @Filename: two.js
+        this.c = 3;
+        const total = globalThis.a + this.b + window.c + this.unknown;
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
         // \`globalThis\`
-      // Add globalThis
-      // @Filename: one.ts
-      var a = 1;
-      var b = 2;
-      // @Filename: two.js
-      this.c = 3;
-      const total = globalThis.a + this.b + window.c + this.unknown;
-      `;
-    const gas = `
-      // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
-      // \`globalThis\`
-      // Add globalThis
-      // @Filename: one.ts
-      var a = 1;
-      var b = 2;
-      // @Filename: two.js
-      this.c = 3;
-      var total = globalThis.a + this.b + window.c + this.unknown;
-      `;
-    expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+        // Add globalThis
+        // @Filename: one.ts
+        var a = 1;
+        var b = 2;
+        // @Filename: two.js
+        this.c = 3;
+        var total = globalThis.a + this.b + window.c + this.unknown;
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
   });
 });
