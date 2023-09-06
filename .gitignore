@@ -60,8 +60,7 @@ typings
 # next.js build output
 .next
 
-*.js
-*.js.map
-*.d.ts
 *.DS_Store
 *.lock
+
+dist/
