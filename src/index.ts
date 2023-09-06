@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import typescript from 'typescript';
 import type { PackageJson } from 'type-fest';
 import type {
