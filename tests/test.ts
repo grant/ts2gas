@@ -284,14 +284,14 @@ describe('ts2gas', () => {
       // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
       var exports = exports || {};
       var module = module || { exports: exports };
-      //import Module from 'TypeScriptModule1';
+      var TypeScriptModule1_1 = TypeScriptModule1_1 || { "default": Module }; //import Module from 'TypeScriptModule1';
       var module = new Module();
-      //import { SubModule } from "TypeScriptModule2";
+      var TypeScriptModule2_1 = TypeScriptModule2_1 || { SubModule: SubModule }; //import { SubModule } from "TypeScriptModule2";
       var subModule = new SubModule();
-      //import { SubModule2, SubModule3 } from "TypeScriptModule3";
+      var TypeScriptModule3_1 = TypeScriptModule3_1 || { SubModule2: SubModule2, SubModule3: SubModule3 }; //import { SubModule2, SubModule3 } from "TypeScriptModule3";
       var subModule2 = new SubModule2();
       var subModule3 = new SubModule3();
-      //import {\\n  SubModule4,\\n  SubModule5\\n} from "TypeScriptModule4";
+      var TypeScriptModule4_1 = TypeScriptModule4_1 || { SubModule4: SubModule4, SubModule5: SubModule5 }; //import {\\n  SubModule4,\\n  SubModule5\\n} from "TypeScriptModule4";
       var subModule4 = new SubModule4();
       var subModule5 = new SubModule5();
       `;
@@ -428,7 +428,7 @@ describe('ts2gas', () => {
       // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
       var exports = exports || {};
       var module = module || { exports: exports };
-      //import { ICONS } from './package';
+      var package_1 = package_1 || { ICONS: ICONS }; //import { ICONS } from './package';
       exports.ICONS.email;
       `;
     expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
@@ -590,6 +590,175 @@ describe('ts2gas', () => {
         // @Filename: two.js
         this.c = 3;
         var total = globalThis.a + this.b + window.c + this.unknown;
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+  });
+
+  describe('Imports', () => {
+    test('Constant ./ Relative Import', () => {
+      const typescript = `
+        import { prop } from './util';
+        prop.x;
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { prop: prop }; //import { prop } from './util';
+        prop.x;
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Function Absolute Import', () => {
+      const typescript = `
+        import { func } from 'bob';
+        func();
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var bob_1 = bob_1 || { func: func }; //import { func } from 'bob';
+        (0, bob_1.func)();
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Function ./ Relative Import', () => {
+      const typescript = `
+        import { func } from './util';
+        func();
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { func: func }; //import { func } from './util';
+        (0, util_1.func)();
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Function ../ Relative Import', () => {
+      const typescript = `
+        import { func } from '../util';
+        func();
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { func: func }; //import { func } from '../util';
+        (0, util_1.func)();
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Function ../../ Relative Import', () => {
+      const typescript = `
+        import { func } from '../../util';
+        func();
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { func: func }; //import { func } from '../../util';
+        (0, util_1.func)();
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Function ../src/ Relative Import', () => {
+      const typescript = `
+        import { func } from '../src/util';
+        func();
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { func: func }; //import { func } from '../src/util';
+        (0, util_1.func)();
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Default Constant Import', () => {
+      const typescript = `
+        import prop from './util';
+        prop.x;
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { "default": prop }; //import prop from './util';
+        prop.x;
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Default Function Import', () => {
+      const typescript = `
+        import func from './util';
+        func();
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { "default": func }; //import func from './util';
+        (0, util_1["default"])();
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Default And Named Import', () => {
+      const typescript = `
+        import func, { bob } from './util';
+        func();
+        bob();
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { "default": func, bob: bob }; //import func, { bob } from './util';
+        (0, util_1["default"])();
+        (0, util_1.bob)();
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Aliased Named Import', () => {
+      const typescript = `
+      import { bob as bobette } from './util';
+      bobette();
+      `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var util_1 = util_1 || { bob: bob }; //import { bob as bobette } from './util';
+        (0, util_1.bob)();
+        `;
+      expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
+    });
+
+    test('Namespace Import', () => {
+      const typescript = `
+        import * as bob from './util';
+        bob.add();
+        `;
+      const gas = `
+        // Compiled using ${packageJson.name} ${packageJson.version} (TypeScript ${version})
+        var exports = exports || {};
+        var module = module || { exports: exports };
+        var bob = bob || exports; //import * as bob from './util';
+        bob.add();
         `;
       expect(ts2gas(trimWhitespace(typescript)).trim()).toBe(trimWhitespace(gas));
     });
