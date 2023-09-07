@@ -18,7 +18,9 @@
     "suppressExcessPropertyErrors": true,
     "suppressImplicitAnyIndexErrors": true,
     "target": "ES2019",
-    "lib": ["ESNext"],
+    "lib": [
+      "ESNext"
+    ],
     "newLine": "lf",
     "noEmitOnError": true,
     "sourceMap": true,
@@ -28,7 +30,8 @@
     "stripInternal": true,
     "experimentalDecorators": true,
     "pretty": true,
-    "importHelpers": true // canary: will cause runtime error if `tslib` is necessary
+    "importHelpers": true, // canary: will cause runtime error if `tslib` is necessary
+    "outDir": "dist"
   },
   "files": [
     "src/index.ts",

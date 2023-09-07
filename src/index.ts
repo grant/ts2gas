@@ -1,7 +1,5 @@
-import fs from 'fs';
-import typescript from 'typescript';
-import type { PackageJson } from 'type-fest';
-import type {
+import fs from 'node:fs';
+import typescript, {
   Node,
   SourceFile,
   SyntaxKind,
@@ -9,7 +7,12 @@ import type {
   TransformerFactory,
   TranspileOptions,
   Visitor,
+  ImportDeclaration,
+  ImportSpecifier,
+  StringLiteralLike,
+  Identifier,
 } from 'typescript';
+import type { PackageJson } from 'type-fest';
 
 const {
   addSyntheticTrailingComment,
@@ -20,6 +23,7 @@ const {
     createNotEmittedStatement,
     createObjectLiteralExpression,
     createPropertyAssignment,
+    createShorthandPropertyAssignment,
     createToken,
     createVariableDeclaration,
     createVariableDeclarationList,
@@ -137,7 +141,8 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
   /**
    * Filter any import declaration
    */
-  const importNodeFilter: NodeFilter = (node: Node) => isImportEqualsDeclaration(node) || isImportDeclaration(node);
+  const importEqualsNodeFilter: NodeFilter = (node: Node) => isImportEqualsDeclaration(node);
+  const importNodeFilter: NodeFilter = (node: Node) => isImportDeclaration(node);
 
   /**
    * Filter any identifier
@@ -160,14 +165,84 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
     return ignoredNode;
   };
 
+  /**
+   *  Create a mock module import statement
+   * @param {Node} node The import node to mock the module import for.
+   */
+  const createMockModuleImportStatement: Transformer<Node> = (node: Node) => {
+    const importNode = node as ImportDeclaration;
+    const moduleSpecifier = importNode.moduleSpecifier as StringLiteralLike;
+    const moduleName = moduleSpecifier.text.slice(moduleSpecifier.text.lastIndexOf('/') + 1);
+
+    const defaultNameSpecifier = importNode.importClause?.name
+      ? [createPropertyAssignment(createIdentifier('default'), createIdentifier(idText(importNode.importClause.name)))]
+      : [];
+
+    const namedSpecifiers =
+      importNode.importClause?.namedBindings
+        ?.getChildren()
+        .filter((child) => child.kind === SyntaxKind.SyntaxList)
+        .flatMap((list) => list.getChildren().filter((c) => c.kind === SyntaxKind.ImportSpecifier))
+        .map((specefier) => specefier as ImportSpecifier)
+        .map((specifier) => idText(specifier.propertyName ?? specifier.name))
+        .map((specifierName) => createShorthandPropertyAssignment(specifierName)) ?? [];
+
+    const specifiers = [...defaultNameSpecifier, ...namedSpecifiers];
+
+    const namespaceSpecifier = importNode.importClause?.namedBindings
+      ?.getChildren()
+      .find((child) => child.kind === SyntaxKind.Identifier) as Identifier;
+
+    const namespace = namespaceSpecifier ? idText(namespaceSpecifier) : null;
+    const specifiersNode = namespace ? createIdentifier('exports') : createObjectLiteralExpression(specifiers, false);
+    const mockModuleName = namespace ?? `${moduleName}_1`;
+
+    const moduleImport = createVariableStatement(
+      undefined,
+      createVariableDeclarationList(
+        [
+          createVariableDeclaration(
+            createIdentifier(mockModuleName),
+            undefined,
+            undefined,
+            createBinaryExpression(
+              createIdentifier(mockModuleName),
+              createToken(tsSyntaxKind.BarBarToken),
+              specifiersNode,
+            ),
+          ),
+        ],
+        NodeFlags.None,
+      ),
+    );
+    addSyntheticTrailingComment(
+      moduleImport,
+      tsSyntaxKind.SingleLineCommentTrivia,
+      node.getText().replace(/\n/g, '\\n'),
+    );
+    return moduleImport;
+  };
+
   // `before:` transformer factories
+
+  /**
+   * Create a 'before' Transformer callback function
+   * It create a global variable to mock a module import.
+   * @param {NodeFilter} nodeFilter The node visitor used to transform.
+   */
+  const mockModuleImportBeforeBuilder: BeforeTransformerFactory = (nodeFilter: NodeFilter) => (context) => {
+    const visitor: Visitor = (node) =>
+      nodeFilter(node) ? createMockModuleImportStatement(node) : visitEachChild(node, visitor, context);
+
+    return (sourceFile: SourceFile) => visitNode(sourceFile, visitor);
+  };
 
   /**
    * Create a 'before' Transformer callback function
    * It use 'createCommentedStatement' to comment-out filtered node
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
-  const ignoreNodeBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
+  const ignoreNodeBeforeBuilder: BeforeTransformerFactory = (nodeFilter: NodeFilter) => (context) => {
     const visitor: Visitor = (node) =>
       nodeFilter(node) ? createCommentedStatement(node) : visitEachChild(node, visitor, context);
 
@@ -179,7 +254,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * It use applies the 'NoSubstitution' flag on every node
    * @param {NodeFilter} nodeFilter The node visitor used to transform (unused here).
    */
-  const noSubstitutionBeforeBuilder: BeforeTransformerFactory = (nodeFilter) => (context) => {
+  const noSubstitutionBeforeBuilder: BeforeTransformerFactory = (nodeFilter: NodeFilter) => (context) => {
     const visitor: Visitor = (node) => {
       if (
         nodeFilter(node) && // Node kind is Identifier
@@ -202,7 +277,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
    * @param {SyntaxKind} kind the kind of node to filter.
    * @param {NodeFilter} nodeFilter The node visitor used to transform.
    */
-  const ignoreNodeAfterBuilder: AfterTransformerFactory = (kind, nodeFilter) => (context) => {
+  const ignoreNodeAfterBuilder: AfterTransformerFactory = (kind: SyntaxKind, nodeFilter: NodeFilter) => (context) => {
     const previousOnSubstituteNode = context.onSubstituteNode;
 
     context.enableSubstitution(kind);
@@ -227,9 +302,13 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
 
   // ## Imports
   // Some editors (like IntelliJ) automatically import identifiers.
-  // Individual imports lines are commented out
+  // Individual imports lines are transformed into mock module imports
   // i.e. import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;
-  const ignoreImport = ignoreNodeBeforeBuilder(importNodeFilter);
+  const mockImport = mockModuleImportBeforeBuilder(importNodeFilter);
+
+  // ## Imports
+  // ignore imports like `import GmailMessage = GoogleAppsScript.Gmail.GmailMessage;`
+  const ignoreImportEquals = ignoreNodeBeforeBuilder(importEqualsNodeFilter);
 
   // ## Exports
   // ignore exports like `export * from 'file'`
@@ -339,7 +418,7 @@ const ts2gas = (source: string, transpileOptions: Readonly<TranspileOptions> = {
       module: ModuleKind.None,
     },
     transformers: {
-      before: [noSubstitution, ignoreExportFrom, ignoreImport],
+      before: [noSubstitution, ignoreExportFrom, ignoreImportEquals, mockImport],
       after: [removeExportEsModule, removeExportsDefault, detectExportNodes, addDummyModuleNodes],
     },
   };
